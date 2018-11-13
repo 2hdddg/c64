@@ -24,6 +24,8 @@ struct test {
     int              num_steps;
     struct cpu_state state;
     bool             check_reg_a;
+    bool             check_reg_x;
+    bool             check_reg_y;
     bool             check_flags;
 };
 
@@ -81,8 +83,6 @@ int each_before()
     _ram[0x0012] = 0x02;
     _ram[0x0013] = 0x40;
 
-
-
     return cpu_create(_mem, STDOUT_FILENO, &_cpu) == 0;
 }
 
@@ -99,6 +99,20 @@ int check_test(struct test *test, struct cpu_state *state)
         if (test->state.reg_a != state->reg_a) {
             printf("%s: failed. Expected reg_a:%02x but was %02x\n",
                    test->name, test->state.reg_a, state->reg_a);
+            return 0;
+        }
+    }
+    if (test->check_reg_x) {
+        if (test->state.reg_x != state->reg_x) {
+            printf("%s: failed. Expected reg_x:%02x but was %02x\n",
+                   test->name, test->state.reg_x, state->reg_x);
+            return 0;
+        }
+    }
+    if (test->check_reg_y) {
+        if (test->state.reg_y != state->reg_y) {
+            printf("%s: failed. Expected reg_y:%02x but was %02x\n",
+                   test->name, test->state.reg_y, state->reg_y);
             return 0;
         }
     }
@@ -204,3 +218,55 @@ int test_load_a_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+int test_load_x_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "Immediate LDX",
+            .instructions = { 0xa2, 0x77 },
+            .num_steps = 1,
+            .state = {
+                .reg_x = 0x77,
+            },
+            .check_reg_x = true,
+        },
+        {
+            .name = "Zero page LDX",
+            .instructions = { 0xa6, 0x02 },
+            .num_steps = 1,
+            .state = {
+                .reg_x = 0x30,
+            },
+            .check_reg_x = true,
+        },
+        {
+            .name = "Zero page, Y LDX",
+            .instructions = { 0xa0, 0x03, 0xb6, 0x01 },
+            .num_steps = 2,
+            .state = {
+                .reg_x = 0x50,
+            },
+            .check_reg_x = true,
+        },
+        {
+            .name = "Absolute LDX",
+            .instructions = { 0xae, 0x01, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .reg_x = 0x01,
+            },
+            .check_reg_x = true,
+        },
+        {
+            .name = "Absolute,Y LDX",
+            .instructions = { 0xa0, 0x03, 0xbe, 0x00, 0x40 },
+            .num_steps = 2,
+            .state = {
+                .reg_x = 0x03,
+            },
+            .check_reg_x = true,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

@@ -210,6 +210,9 @@ static void trace_execution(int fd, struct instruction *instr,
     case Zeropage_X:
         sprintf(trace, "$%02x, X", instr->operands[0]);
         break;
+    case Zeropage_Y:
+        sprintf(trace, "$%02x, Y", instr->operands[0]);
+        break;
     default:
         trace[0] = '?';
         trace[1] = 0;
@@ -311,6 +314,10 @@ static void load(struct cpu_h *cpu,
         break;
     case Zeropage_X:
         address = ops[0] + state->reg_x;
+        reg = mem_get(cpu->mem, address);
+        break;
+    case Zeropage_Y:
+        address = ops[0] + state->reg_y;
         reg = mem_get(cpu->mem, address);
         break;
     default:

@@ -111,6 +111,7 @@ typedef enum {
     Relative,
     Zeropage,
     Zeropage_X,
+    Zeropage_Y,
     Undefined,
 } addressing_modes;
 
@@ -118,9 +119,7 @@ static int get_num_operands(addressing_modes mode)
 {
     switch (mode) {
     case Absolute:
-        return 2;
     case Absolute_Y:
-        return 2;
     case Absolute_X:
         return 2;
     case Accumulator:
@@ -132,14 +131,14 @@ static int get_num_operands(addressing_modes mode)
     case Indirect:
         return 2;
     case Indirect_X:
-        return 1;
     case Indirect_Y:
         return 1;
     case Relative:
         return 1;
     case Zeropage:
-        return 1;
     case Zeropage_X:
+    case Zeropage_Y:
+        return 1;
         return 1;
     case Undefined:
     default:
@@ -371,8 +370,8 @@ static const struct operation operations[256] = {
 { .mnem = LAX, .cycles = 0, .mode = Indirect_Y, },
 { .mnem = LDY, .cycles = 0, .mode = Zeropage_X, },
 { .mnem = LDA, .cycles = 0, .mode = Zeropage_X, },
-{ .mnem = LDX, .cycles = 0, .mode = Zeropage_X, },
-{ .mnem = LAX, .cycles = 0, .mode = Zeropage_X, },
+{ .mnem = LDX, .cycles = 0, .mode = Zeropage_Y, },
+{ .mnem = LAX, .cycles = 0, .mode = Zeropage_Y, },
 
 { .mnem = CLV, .cycles = 0, .mode = Implied,    },
 { .mnem = LDA, .cycles = 0, .mode = Absolute_Y, },
@@ -380,8 +379,8 @@ static const struct operation operations[256] = {
 { .mnem = LAS, .cycles = 0, .mode = Absolute_Y, },
 { .mnem = LDY, .cycles = 0, .mode = Absolute_X, },
 { .mnem = LDA, .cycles = 0, .mode = Absolute_X, },
-{ .mnem = LDX, .cycles = 0, .mode = Absolute_X, },
-{ .mnem = LAX, .cycles = 0, .mode = Absolute_X, },
+{ .mnem = LDX, .cycles = 0, .mode = Absolute_Y, },
+{ .mnem = LAX, .cycles = 0, .mode = Absolute_Y, },
 
 /* c0 - cf */
 { .mnem = CPY, .cycles = 0, .mode = Implied,    },
