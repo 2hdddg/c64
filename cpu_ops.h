@@ -346,9 +346,9 @@ static const struct operation operations[256] = {
 { .mnem = SHA, .cycles = 0, .mode = Absolute_X, },
 
 /* a0 - af */
-{ .mnem = LDY, .cycles = 0, .mode = Implied,    },
+{ .mnem = LDY, .cycles = 0, .mode = Immediate,  },
 { .mnem = LDA, .cycles = 0, .mode = Indirect_X, },
-{ .mnem = LDX, .cycles = 0, .mode = Undefined,  },
+{ .mnem = LDX, .cycles = 0, .mode = Immediate,  },
 { .mnem = LAX, .cycles = 0, .mode = Indirect_X, },
 { .mnem = LDY, .cycles = 0, .mode = Zeropage,   },
 { .mnem = LDA, .cycles = 0, .mode = Zeropage,   },

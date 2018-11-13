@@ -168,8 +168,16 @@ static void trace_execution(int fd, struct instruction *instr,
     write(fd, instr->operation->undocumented ? "*" : " ", 1);
 
     switch (instr->operation->mode) {
+    case Absolute:
+        sprintf(trace, "$%02x%02x",
+                instr->operands[1], instr->operands[0]);
+        break;
     case Absolute_X:
-        sprintf(trace, "$%02x%02x, X ",
+        sprintf(trace, "$%02x%02x,X",
+                instr->operands[1], instr->operands[0]);
+        break;
+    case Absolute_Y:
+        sprintf(trace, "$%02x%02x,Y",
                 instr->operands[1], instr->operands[0]);
         break;
     case Immediate:
@@ -178,8 +186,16 @@ static void trace_execution(int fd, struct instruction *instr,
     case Implied:
         break;
     case Indirect:
-        sprintf(trace, "($%02x%02x) ",
+        sprintf(trace, "($%02x%02x)",
                 instr->operands[1], instr->operands[0]);
+        break;
+    case Indirect_X:
+        sprintf(trace, "($%02x,X)",
+                instr->operands[1]);
+        break;
+    case Indirect_Y:
+        sprintf(trace, "($%02x),Y",
+                instr->operands[1]);
         break;
     case Relative:
         if (instr->operands[0] & 0x80) {
@@ -187,6 +203,12 @@ static void trace_execution(int fd, struct instruction *instr,
         } else {
             sprintf(trace, "+$%02x", instr->operands[0] + 2);
         }
+        break;
+    case Zeropage:
+        sprintf(trace, "$%02x", instr->operands[0]);
+        break;
+    case Zeropage_X:
+        sprintf(trace, "$%02x, X", instr->operands[0]);
         break;
     default:
         trace[0] = '?';
@@ -239,23 +261,57 @@ static void transfer(struct cpu_h *cpu,
     eval_neg_flag(state, from);
 }
 
-static void lda(struct cpu_h *cpu,
-                struct instruction *instr)
+static void load(struct cpu_h *cpu,
+                 struct instruction *instr,
+                 uint8_t *reg_out)
 {
     uint16_t         address;
     uint8_t          *ops = instr->operands;
-    uint8_t          reg_a;
+    uint8_t          reg;
     struct cpu_state *state = &cpu->state;
 
     switch (instr->operation->mode) {
+    case Absolute:
+        // TODO: Calculate page boundary !
+        address = make_address(ops[1], ops[0]);
+        reg = mem_get(cpu->mem, address);
+        break;
     case Absolute_X:
         // TODO: Calculate page boundary !
         address = make_address(ops[1], ops[0]);
         address += state->reg_x;
-        reg_a = mem_get(cpu->mem, address);
+        reg = mem_get(cpu->mem, address);
+        break;
+    case Absolute_Y:
+        // TODO: Calculate page boundary !
+        address = make_address(ops[1], ops[0]);
+        address += state->reg_y;
+        reg = mem_get(cpu->mem, address);
         break;
     case Immediate:
-        reg_a = ops[0];
+        reg = ops[0];
+        break;
+    case Indirect_X:
+        address = ops[0];
+        address += state->reg_x;
+        reg = mem_get(cpu->mem, address);
+        break;
+    case Indirect_Y:
+        // TODO: Calculate page boundary !
+        address = ops[0];
+        ops[0] = mem_get(cpu->mem, address);
+        ops[1] = mem_get(cpu->mem, address+1);
+        address = make_address(ops[1], ops[0]);
+        address += state->reg_y;
+        reg = mem_get(cpu->mem, address);
+        break;
+    case Zeropage:
+        address = ops[0];
+        reg = mem_get(cpu->mem, address);
+        break;
+    case Zeropage_X:
+        address = ops[0] + state->reg_x;
+        reg = mem_get(cpu->mem, address);
         break;
     default:
         printf("Unhandled address mode\n");
@@ -263,10 +319,10 @@ static void lda(struct cpu_h *cpu,
     }
 
     /* Store new value */
-    state->reg_a = reg_a;
-    /* Set flags for new value of reg_a */
-    eval_zero_flag(state, reg_a);
-    eval_neg_flag(state, reg_a);
+    *reg_out = reg;
+    /* Set flags for new value of reg */
+    eval_zero_flag(state, reg);
+    eval_neg_flag(state, reg);
 }
 
 static void and(struct cpu_h *cpu,
@@ -393,7 +449,13 @@ static int execute(struct cpu_h *cpu,
 
     /* Load instructions */
     case LDA:
-        lda(cpu, instr);
+        load(cpu, instr, &cpu->state.reg_a);
+        break;
+    case LDX:
+        load(cpu, instr, &cpu->state.reg_x);
+        break;
+    case LDY:
+        load(cpu, instr, &cpu->state.reg_y);
         break;
 
     /* ALU instructions */
