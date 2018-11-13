@@ -270,3 +270,56 @@ int test_load_x_instructions()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_load_y_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "Immediate LDY",
+            .instructions = { 0xa0, 0x77 },
+            .num_steps = 1,
+            .state = {
+                .reg_y = 0x77,
+            },
+            .check_reg_y = true,
+        },
+        {
+            .name = "Zero page LDY",
+            .instructions = { 0xa4, 0x02 },
+            .num_steps = 1,
+            .state = {
+                .reg_y = 0x30,
+            },
+            .check_reg_y = true,
+        },
+        {
+            .name = "Zero page, X LDY",
+            .instructions = { 0xa2, 0x03, 0xb4, 0x01 },
+            .num_steps = 2,
+            .state = {
+                .reg_y = 0x50,
+            },
+            .check_reg_y = true,
+        },
+        {
+            .name = "Absolute LDY",
+            .instructions = { 0xac, 0x01, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .reg_y = 0x01,
+            },
+            .check_reg_y = true,
+        },
+        {
+            .name = "Absolute,X LDY",
+            .instructions = { 0xa2, 0x03, 0xbc, 0x00, 0x40 },
+            .num_steps = 2,
+            .state = {
+                .reg_y = 0x03,
+            },
+            .check_reg_y = true,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
