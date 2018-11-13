@@ -1,1 +1,1 @@
-C64 implementation for fun and nostalgica..
+C64 emulator implementation for fun and nostalgica..
