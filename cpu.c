@@ -264,65 +264,65 @@ static void transfer(struct cpu_h *cpu,
     eval_neg_flag(state, from);
 }
 
-static void load(struct cpu_h *cpu,
-                 struct instruction *instr,
-                 uint8_t *reg_out)
+static uint16_t get_address_from_mode(struct cpu_h *cpu,
+                                      struct instruction *instr)
 {
     uint16_t         address;
     uint8_t          *ops = instr->operands;
-    uint8_t          reg;
     struct cpu_state *state = &cpu->state;
 
     switch (instr->operation->mode) {
     case Absolute:
-        // TODO: Calculate page boundary !
         address = make_address(ops[1], ops[0]);
-        reg = mem_get(cpu->mem, address);
         break;
     case Absolute_X:
-        // TODO: Calculate page boundary !
         address = make_address(ops[1], ops[0]);
         address += state->reg_x;
-        reg = mem_get(cpu->mem, address);
         break;
     case Absolute_Y:
-        // TODO: Calculate page boundary !
         address = make_address(ops[1], ops[0]);
         address += state->reg_y;
-        reg = mem_get(cpu->mem, address);
-        break;
-    case Immediate:
-        reg = ops[0];
         break;
     case Indirect_X:
         address = ops[0];
         address += state->reg_x;
-        reg = mem_get(cpu->mem, address);
         break;
     case Indirect_Y:
-        // TODO: Calculate page boundary !
         address = ops[0];
         ops[0] = mem_get(cpu->mem, address);
         ops[1] = mem_get(cpu->mem, address+1);
         address = make_address(ops[1], ops[0]);
         address += state->reg_y;
-        reg = mem_get(cpu->mem, address);
         break;
     case Zeropage:
         address = ops[0];
-        reg = mem_get(cpu->mem, address);
         break;
     case Zeropage_X:
         address = ops[0] + state->reg_x;
-        reg = mem_get(cpu->mem, address);
         break;
     case Zeropage_Y:
         address = ops[0] + state->reg_y;
-        reg = mem_get(cpu->mem, address);
         break;
     default:
         printf("Unhandled address mode\n");
         break;
+    }
+    return address;
+}
+
+static void load(struct cpu_h *cpu,
+                 struct instruction *instr,
+                 uint8_t *reg_out)
+{
+    uint8_t          reg;
+    struct cpu_state *state = &cpu->state;
+
+    if (instr->operation->mode == Immediate) {
+        reg = instr->operands[0];
+    }
+    else {
+        uint16_t address = get_address_from_mode(cpu, instr);
+        reg = mem_get(cpu->mem, address);
     }
 
     /* Store new value */
@@ -330,6 +330,14 @@ static void load(struct cpu_h *cpu,
     /* Set flags for new value of reg */
     eval_zero_flag(state, reg);
     eval_neg_flag(state, reg);
+}
+
+static void store(struct cpu_h *cpu,
+                  struct instruction *instr,
+                  uint8_t reg)
+{
+    uint16_t address = get_address_from_mode(cpu, instr);
+    mem_set(cpu->mem, address, reg);
 }
 
 static void and(struct cpu_h *cpu,
@@ -463,6 +471,11 @@ static int execute(struct cpu_h *cpu,
         break;
     case LDY:
         load(cpu, instr, &cpu->state.reg_y);
+        break;
+
+    /* Store instructions */
+    case STA:
+        store(cpu, instr, cpu->state.reg_a);
         break;
 
     /* ALU instructions */

@@ -56,7 +56,6 @@ void mem_destroy(struct mem_h *mem)
 {
 }
 
-
 int each_before()
 {
     mem_create(&_mem);
@@ -318,6 +317,23 @@ int test_load_y_instructions()
                 .reg_y = 0x03,
             },
             .check_reg_y = true,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+int test_store_a_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "Zero page",
+            .instructions = { 0xa9, 0x01, 0x85, 0x20, 0xa6, 0x20 },
+            .num_steps = 3,
+            .state = {
+                .reg_x = 0x01,
+            },
+            .check_reg_x = true,
         },
     };
 
