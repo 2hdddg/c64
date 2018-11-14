@@ -27,6 +27,8 @@ struct test {
     bool             check_reg_x;
     bool             check_reg_y;
     bool             check_flags;
+    uint16_t         check_ram_at;
+    uint8_t          check_ram_val;
 };
 
 /* Stubbed implementation of mem */
@@ -82,6 +84,8 @@ int each_before()
     _ram[0x0012] = 0x02;
     _ram[0x0013] = 0x40;
 
+    /* Use 0x5000 for whatever */
+
     return cpu_create(_mem, STDOUT_FILENO, &_cpu) == 0;
 }
 
@@ -112,6 +116,15 @@ int check_test(struct test *test, struct cpu_state *state)
         if (test->state.reg_y != state->reg_y) {
             printf("%s: failed. Expected reg_y:%02x but was %02x\n",
                    test->name, test->state.reg_y, state->reg_y);
+            return 0;
+        }
+    }
+    if (test->check_ram_at) {
+        if (test->check_ram_val != _ram[test->check_ram_at]) {
+            printf("%s: failed. Expected ram at %04x to be %02x "
+                   "but was %02x",
+                   test->name, test->check_ram_at, test->check_ram_val,
+                   _ram[test->check_ram_at]);
             return 0;
         }
     }
@@ -328,12 +341,38 @@ int test_store_a_instructions()
     struct test tests[] = {
         {
             .name = "Zero page",
-            .instructions = { 0xa9, 0x01, 0x85, 0x20, 0xa6, 0x20 },
+            .instructions = { 0xa9, 0x01, 0x85, 0x20, },
+            .num_steps = 2,
+            .check_ram_at = 0x20,
+            .check_ram_val = 0x01,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0xa9, 0x02, 0xa2, 0x01, 0x95, 0x20, },
             .num_steps = 3,
-            .state = {
-                .reg_x = 0x01,
-            },
-            .check_reg_x = true,
+            .check_ram_at = 0x21,
+            .check_ram_val = 0x02,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0xa9, 0x01, 0x8d, 0x00, 0x50, },
+            .num_steps = 2,
+            .check_ram_at = 0x5000,
+            .check_ram_val = 0x01,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0xa9, 0x02, 0xa2, 0x01, 0x9d, 0x00, 0x50 },
+            .num_steps = 3,
+            .check_ram_at = 0x5001,
+            .check_ram_val = 0x02,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0xa9, 0x03, 0xa0, 0x02, 0x99, 0x00, 0x50 },
+            .num_steps = 3,
+            .check_ram_at = 0x5002,
+            .check_ram_val = 0x03,
         },
     };
 
