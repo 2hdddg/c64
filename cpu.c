@@ -446,6 +446,21 @@ static int execute(struct cpu_h *cpu,
     case PHA:
         stack_push(cpu, state->reg_a);
         break;
+    case PHP:
+        stack_push(cpu, state->flags);
+        break;
+    case PLA:
+        transfer(cpu, &state->reg_a, stack_pop(cpu));
+        break;
+    case PLP:
+        state->flags = stack_pop(cpu);
+        break;
+    case TXS:
+        state->sp = state->reg_x;
+        break;
+    case TSX:
+        transfer(cpu, &state->reg_x, state->sp);
+        break;
 
     /* Transfer instructions */
     case TAX:
@@ -456,9 +471,6 @@ static int execute(struct cpu_h *cpu,
         break;
     case TYA:
         transfer(cpu, &state->reg_a, state->reg_y);
-        break;
-    case TSX:
-        transfer(cpu, &state->reg_x, state->sp);
         break;
 
     /* Load instructions */
@@ -573,9 +585,9 @@ int cpu_poweron(struct cpu_h *cpu)
     return 0;
 }
 
-int cpu_set_pc(struct cpu_h *cpu, uint16_t pc)
+int cpu_set_state(struct cpu_h *cpu, struct cpu_state *state)
 {
-    cpu->state.pc = pc;
+    cpu->state = *state;
     return 0;
 }
 

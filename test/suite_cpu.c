@@ -26,9 +26,13 @@ struct test {
     bool             check_reg_a;
     bool             check_reg_x;
     bool             check_reg_y;
+    bool             check_sp;
     bool             check_flags;
     uint16_t         check_ram_at;
     uint8_t          check_ram_val;
+    uint8_t          init_flags;
+    uint8_t          init_reg_x;
+    uint8_t          init_reg_a;
 };
 
 /* Stubbed implementation of mem */
@@ -87,6 +91,10 @@ int each_before()
     _ram[0x0014] = 0x00;
     _ram[0x0015] = 0x50;
 
+    /* Known value on the stack */
+    _ram[0x0110] = 0x80;
+    _ram[0x0180] = FLAG_DECIMAL_MODE|FLAG_BRK;
+
     /* Use 0x5000 for whatever */
 
     return cpu_create(_mem, STDOUT_FILENO, &_cpu) == 0;
@@ -122,6 +130,20 @@ int check_test(struct test *test, struct cpu_state *state)
             return 0;
         }
     }
+    if (test->check_sp) {
+        if (test->state.sp != state->sp) {
+            printf("%s: failed. Expected sp:%02x but was %02x\n",
+                   test->name, test->state.sp, state->sp);
+            return 0;
+        }
+    }
+    if (test->check_flags) {
+        if (test->state.flags != state->flags) {
+            printf("%s: failed. Expected flags:%02x but was %02x\n",
+                   test->name, test->state.flags, state->flags);
+            return 0;
+        }
+    }
     if (test->check_ram_at) {
         if (test->check_ram_val != _ram[test->check_ram_at]) {
             printf("%s: failed. Expected ram at %04x to be %02x "
@@ -138,11 +160,18 @@ int run_tests(struct test *tests, int num)
 {
     int success = 1;
 
+
     for (int i=0; i<num; i++) {
         printf("Testing %s\n", tests[i].name);
         fflush(stdout);
         memcpy(_ram+CODE, tests[i].instructions, 10);
-        cpu_set_pc(_cpu, CODE);
+        _state.pc = CODE;
+        _state.reg_a = tests[i].init_reg_a;;
+        _state.reg_x = tests[i].init_reg_x;
+        _state.reg_y = 0;
+        _state.flags = tests[i].init_flags;
+        _state.sp = 0xff;
+        cpu_set_state(_cpu, &_state);
         for (int j=0; j < tests[i].num_steps; j++) {
             cpu_step(_cpu, &_state);
         }
@@ -390,6 +419,99 @@ int test_store_a_instructions()
             .num_steps = 3,
             .check_ram_at = 0x5004,
             .check_ram_val = 0x03,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+int test_stack_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "TXS, transfer X to SP",
+            .instructions = { 0x9a },
+            .num_steps = 1,
+            .check_sp = true,
+            .check_flags = true,
+            .state = {
+                .sp = 0x10,
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = FLAG_ZERO,
+            .init_reg_x = 0x10,
+        },
+        {
+            .name = "TSX, transfer SP to X",
+            .instructions = { 0xba, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_x = true,
+            /* Relies on stack default to 0xff */
+            .state = {
+                .reg_x = 0xff,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = FLAG_ZERO,
+        },
+        {
+            .name = "PHA, push accumulator",
+            .instructions = { 0x48 },
+            .num_steps = 1,
+            .check_sp = true,
+            .check_flags = true,
+            .state = {
+                .sp = 0xfe,
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = FLAG_ZERO,
+            .init_reg_a = 0x10,
+            .check_ram_at = 0x01ff,
+            .check_ram_val = 0x10,
+        },
+        {
+            .name = "PLA, pull accumulator",
+            /* Transfer X to SP first */
+            .instructions = { 0x9a, 0x68 },
+            .num_steps = 2,
+            .check_sp = true,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .sp = 0x10,
+                .reg_a = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = FLAG_ZERO,
+            .init_reg_x = 0x0f,
+        },
+        {
+            .name = "PHP, push status",
+            .instructions = { 0x08 },
+            .num_steps = 1,
+            .check_sp = true,
+            .check_flags = true,
+            .state = {
+                .sp = 0xfe,
+                .flags = FLAG_ZERO|FLAG_IRQ_DISABLE,
+            },
+            .init_flags = FLAG_ZERO|FLAG_IRQ_DISABLE,
+            .check_ram_at = 0x01ff,
+            .check_ram_val = FLAG_ZERO|FLAG_IRQ_DISABLE,
+        },
+        {
+            /* Transfer X to SP first */
+            .name = "PLP, pull status",
+            .instructions = { 0x9a, 0x28 },
+            .num_steps = 2,
+            .check_sp = true,
+            .check_flags = true,
+            .state = {
+                .sp = 0x80,
+                .flags = FLAG_DECIMAL_MODE|FLAG_BRK,
+            },
+            .init_reg_x = 0x7f,
+            .init_flags = 0,
         },
     };
 
