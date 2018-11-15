@@ -191,11 +191,11 @@ static void trace_execution(int fd, struct instruction *instr,
         break;
     case Indirect_X:
         sprintf(trace, "($%02x,X)",
-                instr->operands[1]);
+                instr->operands[0]);
         break;
     case Indirect_Y:
         sprintf(trace, "($%02x),Y",
-                instr->operands[1]);
+                instr->operands[0]);
         break;
     case Relative:
         if (instr->operands[0] & 0x80) {
@@ -289,9 +289,8 @@ static uint16_t get_address_from_mode(struct cpu_h *cpu,
         break;
     case Indirect_Y:
         address = ops[0];
-        ops[0] = mem_get(cpu->mem, address);
-        ops[1] = mem_get(cpu->mem, address+1);
-        address = make_address(ops[1], ops[0]);
+        address = make_address(mem_get(cpu->mem, address + 1),
+                               mem_get(cpu->mem, address));
         address += state->reg_y;
         break;
     case Zeropage:

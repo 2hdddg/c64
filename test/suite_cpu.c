@@ -83,6 +83,9 @@ int each_before()
     /* And another vector pointing to known values at 0x4002 */
     _ram[0x0012] = 0x02;
     _ram[0x0013] = 0x40;
+    /* And another vector pointing to scrap area at 0x5000 */
+    _ram[0x0014] = 0x00;
+    _ram[0x0015] = 0x50;
 
     /* Use 0x5000 for whatever */
 
@@ -372,6 +375,20 @@ int test_store_a_instructions()
             .instructions = { 0xa9, 0x03, 0xa0, 0x02, 0x99, 0x00, 0x50 },
             .num_steps = 3,
             .check_ram_at = 0x5002,
+            .check_ram_val = 0x03,
+        },
+        {
+            .name = "Indirect, X",
+            .instructions = { 0xa9, 0x03, 0xa2, 0x04, 0x81, 0x50 },
+            .num_steps = 3,
+            .check_ram_at = 0x54,
+            .check_ram_val = 0x03,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0xa9, 0x03, 0xa0, 0x04, 0x91, 0x14 },
+            .num_steps = 3,
+            .check_ram_at = 0x5004,
             .check_ram_val = 0x03,
         },
     };
