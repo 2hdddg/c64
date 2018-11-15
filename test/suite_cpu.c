@@ -31,8 +31,9 @@ struct test {
     uint16_t         check_ram_at;
     uint8_t          check_ram_val;
     uint8_t          init_flags;
-    uint8_t          init_reg_x;
     uint8_t          init_reg_a;
+    uint8_t          init_reg_x;
+    uint8_t          init_reg_y;
 };
 
 /* Stubbed implementation of mem */
@@ -168,7 +169,7 @@ int run_tests(struct test *tests, int num)
         _state.pc = CODE;
         _state.reg_a = tests[i].init_reg_a;;
         _state.reg_x = tests[i].init_reg_x;
-        _state.reg_y = 0;
+        _state.reg_y = tests[i].init_reg_y;
         _state.flags = tests[i].init_flags;
         _state.sp = 0xff;
         cpu_set_state(_cpu, &_state);
@@ -205,11 +206,12 @@ int test_load_a_instructions()
         },
         {
             .name = "Zero page, X LDA",
-            .instructions = { 0xa2, 0x03, 0xb5, 0x01 },
-            .num_steps = 2,
+            .instructions = { 0xb5, 0x01 },
+            .num_steps = 1,
             .state = {
                 .reg_a = 0x50,
             },
+            .init_reg_x = 0x03,
             .check_reg_a = true,
         },
         {
@@ -223,39 +225,43 @@ int test_load_a_instructions()
         },
         {
             .name = "Absolute,X LDA",
-            .instructions = { 0xa2, 0x03, 0xbd, 0x00, 0x40 },
-            .num_steps = 2,
+            .instructions = { 0xbd, 0x00, 0x40 },
+            .num_steps = 1,
             .state = {
                 .reg_a = 0x03,
             },
+            .init_reg_x = 0x03,
             .check_reg_a = true,
         },
         {
             .name = "Absolute,Y LDA",
-            .instructions = { 0xa0, 0x04, 0xb9, 0x00, 0x40 },
-            .num_steps = 2,
+            .instructions = { 0xb9, 0x00, 0x40 },
+            .num_steps = 1,
             .state = {
                 .reg_a = 0x04,
             },
+            .init_reg_y = 0x04,
             .check_reg_a = true,
         },
         {
             .name = "Indirect, X LDA",
-            .instructions = { 0xa2, 0x02, 0xa1, 0x10 },
-            .num_steps = 2,
+            .instructions = { 0xa1, 0x10 },
+            .num_steps = 1,
             .state = {
                 .reg_a = 0x02,
             },
             .check_reg_a = true,
+            .init_reg_x = 0x02,
         },
         {
             .name = "Indirect, Y LDA",
-            .instructions = { 0xa0, 0x03, 0xb1, 0x10 },
-            .num_steps = 2,
+            .instructions = { 0xb1, 0x10 },
+            .num_steps = 1,
             .state = {
                 .reg_a = 0x03,
             },
             .check_reg_a = true,
+            .init_reg_y = 0x03,
         },
     };
 
@@ -285,12 +291,13 @@ int test_load_x_instructions()
         },
         {
             .name = "Zero page, Y LDX",
-            .instructions = { 0xa0, 0x03, 0xb6, 0x01 },
-            .num_steps = 2,
+            .instructions = { 0xb6, 0x01 },
+            .num_steps = 1,
             .state = {
                 .reg_x = 0x50,
             },
             .check_reg_x = true,
+            .init_reg_y = 0x03,
         },
         {
             .name = "Absolute LDX",
@@ -303,12 +310,13 @@ int test_load_x_instructions()
         },
         {
             .name = "Absolute,Y LDX",
-            .instructions = { 0xa0, 0x03, 0xbe, 0x00, 0x40 },
-            .num_steps = 2,
+            .instructions = { 0xbe, 0x00, 0x40 },
+            .num_steps = 1,
             .state = {
                 .reg_x = 0x03,
             },
             .check_reg_x = true,
+            .init_reg_y = 0x03,
         },
     };
 
@@ -338,12 +346,13 @@ int test_load_y_instructions()
         },
         {
             .name = "Zero page, X LDY",
-            .instructions = { 0xa2, 0x03, 0xb4, 0x01 },
-            .num_steps = 2,
+            .instructions = { 0xb4, 0x01 },
+            .num_steps = 1,
             .state = {
                 .reg_y = 0x50,
             },
             .check_reg_y = true,
+            .init_reg_x = 0x03,
         },
         {
             .name = "Absolute LDY",
@@ -356,12 +365,13 @@ int test_load_y_instructions()
         },
         {
             .name = "Absolute,X LDY",
-            .instructions = { 0xa2, 0x03, 0xbc, 0x00, 0x40 },
-            .num_steps = 2,
+            .instructions = { 0xbc, 0x00, 0x40 },
+            .num_steps = 1,
             .state = {
                 .reg_y = 0x03,
             },
             .check_reg_y = true,
+            .init_reg_x = 0x03,
         },
     };
 
@@ -373,52 +383,63 @@ int test_store_a_instructions()
     struct test tests[] = {
         {
             .name = "Zero page",
-            .instructions = { 0xa9, 0x01, 0x85, 0x20, },
-            .num_steps = 2,
+            .instructions = { 0x85, 0x20, },
+            .num_steps = 1,
             .check_ram_at = 0x20,
             .check_ram_val = 0x01,
+            .init_reg_a = 0x01,
         },
         {
             .name = "Zero page, X",
-            .instructions = { 0xa9, 0x02, 0xa2, 0x01, 0x95, 0x20, },
-            .num_steps = 3,
+            .instructions = { 0xa2, 0x01, 0x95, 0x20, },
+            .num_steps = 2,
             .check_ram_at = 0x21,
             .check_ram_val = 0x02,
+            .init_reg_a = 0x02,
         },
         {
             .name = "Absolute",
-            .instructions = { 0xa9, 0x01, 0x8d, 0x00, 0x50, },
-            .num_steps = 2,
+            .instructions = { 0x8d, 0x00, 0x50, },
+            .num_steps = 1,
             .check_ram_at = 0x5000,
             .check_ram_val = 0x01,
+            .init_reg_a = 0x01,
         },
         {
             .name = "Absolute, X",
-            .instructions = { 0xa9, 0x02, 0xa2, 0x01, 0x9d, 0x00, 0x50 },
-            .num_steps = 3,
+            .instructions = { 0x9d, 0x00, 0x50 },
+            .num_steps = 2,
             .check_ram_at = 0x5001,
             .check_ram_val = 0x02,
+            .init_reg_a = 0x02,
+            .init_reg_x = 0x01,
         },
         {
             .name = "Absolute, Y",
-            .instructions = { 0xa9, 0x03, 0xa0, 0x02, 0x99, 0x00, 0x50 },
-            .num_steps = 3,
+            .instructions = { 0x99, 0x00, 0x50 },
+            .num_steps = 1,
             .check_ram_at = 0x5002,
             .check_ram_val = 0x03,
+            .init_reg_a = 0x03,
+            .init_reg_y = 0x02,
         },
         {
             .name = "Indirect, X",
-            .instructions = { 0xa9, 0x03, 0xa2, 0x04, 0x81, 0x50 },
-            .num_steps = 3,
+            .instructions = { 0x81, 0x50 },
+            .num_steps = 1,
             .check_ram_at = 0x54,
             .check_ram_val = 0x03,
+            .init_reg_a = 0x03,
+            .init_reg_x = 0x04,
         },
         {
             .name = "Indirect, Y",
-            .instructions = { 0xa9, 0x03, 0xa0, 0x04, 0x91, 0x14 },
+            .instructions = { 0x91, 0x14 },
             .num_steps = 3,
             .check_ram_at = 0x5004,
             .check_ram_val = 0x03,
+            .init_reg_a = 0x03,
+            .init_reg_y = 0x04,
         },
     };
 
