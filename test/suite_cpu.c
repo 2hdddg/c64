@@ -26,6 +26,7 @@ struct test {
     bool             check_reg_a;
     bool             check_reg_x;
     bool             check_reg_y;
+    bool             check_pc;
     bool             check_sp;
     bool             check_flags;
     uint16_t         check_ram_at;
@@ -135,6 +136,13 @@ int check_test(struct test *test, struct cpu_state *state)
         if (test->state.sp != state->sp) {
             printf("%s: failed. Expected sp:%02x but was %02x\n",
                    test->name, test->state.sp, state->sp);
+            return 0;
+        }
+    }
+    if (test->check_pc) {
+        if (test->state.pc != state->pc) {
+            printf("%s: failed. Expected pc:%02x but was %02x\n",
+                   test->name, test->state.pc, state->pc);
             return 0;
         }
     }
@@ -532,6 +540,94 @@ int test_stack_instructions()
                 .flags = FLAG_DECIMAL_MODE|FLAG_BRK,
             },
             .init_reg_x = 0x7f,
+            .init_flags = 0,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+int test_branch_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "BEQ, branch on equal, jump",
+            .instructions = { 0xf0, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x08,
+            },
+            .init_flags = FLAG_ZERO,
+        },
+        {
+            .name = "BEQ, branch on equal, no jump",
+            .instructions = { 0xf0, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = 0,
+        },
+        {
+            .name = "BNE, branch on not equal, jump",
+            .instructions = { 0xd0, 0xfa },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE - 0x04,
+            },
+            .init_flags = 0,
+        },
+        {
+            .name = "BNE, branch on not equal, no jump",
+            .instructions = { 0xd0, 0xfa },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = FLAG_ZERO,
+        },
+        {
+            .name = "BPL, branch on plus, jump",
+            .instructions = { 0x10, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x08,
+            },
+            .init_flags = 0,
+        },
+        {
+            .name = "BPL, branch on plus, no jump",
+            .instructions = { 0x10, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = FLAG_NEGATIVE,
+        },
+        {
+            .name = "BMI, branch on minus, jump",
+            .instructions = { 0x30, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x08,
+            },
+            .init_flags = FLAG_NEGATIVE,
+        },
+        {
+            .name = "BMI, branch on minus, no jump",
+            .instructions = { 0x30, 0x06 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
             .init_flags = 0,
         },
     };

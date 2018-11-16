@@ -199,7 +199,7 @@ static void trace_execution(int fd, struct instruction *instr,
         break;
     case Relative:
         if (instr->operands[0] & 0x80) {
-            sprintf(trace, "-$%02x", (instr->operands[0] - 0x80));
+            sprintf(trace, "-$%02x", (0x100 - instr->operands[0]));
         } else {
             sprintf(trace, "+$%02x", instr->operands[0] + 2);
         }
@@ -379,7 +379,7 @@ static void branch(struct cpu_h *cpu,
         /* Jumps relative to current address */
         offset = instr->operands[0];
         if (offset & 0x80) {
-            cpu->state.pc -= offset - 0x80;
+            cpu->state.pc -= 0x100 - offset;
         }
         else {
             cpu->state.pc += offset;
@@ -502,6 +502,14 @@ static int execute(struct cpu_h *cpu,
     case BNE:
         branch(cpu, instr,
                (cpu->state.flags & FLAG_ZERO) == 0);
+        break;
+    case BPL:
+        branch(cpu, instr,
+               (cpu->state.flags & FLAG_NEGATIVE) == 0);
+        break;
+    case BMI:
+        branch(cpu, instr,
+               cpu->state.flags & FLAG_NEGATIVE);
         break;
 
     /* Jump instructions */
