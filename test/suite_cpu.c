@@ -714,3 +714,120 @@ int test_branch_instructions()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_logical_and_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "AND, immediate",
+            .instructions = { 0x29, 0x80 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page",
+            .instructions = { 0x25, 0x01, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x20,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x35, 0x00, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x20,
+                .flags = 0x00,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x2d, 0x00, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x00,
+                .flags = FLAG_ZERO,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x3d, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0x39, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x02,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0xff,
+            .init_reg_y = 0x02,
+            .init_flags = 0x00,
+        },
+/*
+        {
+            .name = "Indirect, X",
+            .instructions = { 0x81, 0x50 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0x91, 0x14 },
+            .num_steps = 3,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+*/
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

@@ -345,13 +345,12 @@ static void and(struct cpu_h *cpu,
     uint8_t          operand = 0;
     struct cpu_state *state = &cpu->state;
 
-    switch (instr->operation->mode) {
-    case Immediate:
+    if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
-        break;
-    default:
-        printf("Unhandled address mode\n");
-        break;
+    }
+    else {
+        uint16_t address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
     }
 
     /* Store the new value */
