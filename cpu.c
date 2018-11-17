@@ -511,6 +511,22 @@ static int execute(struct cpu_h *cpu,
         branch(cpu, instr,
                cpu->state.flags & FLAG_NEGATIVE);
         break;
+    case BVC:
+        branch(cpu, instr,
+               (cpu->state.flags & FLAG_OVERFLOW) == 0);
+        break;
+    case BVS:
+        branch(cpu, instr,
+               cpu->state.flags & FLAG_OVERFLOW);
+        break;
+    case BCC:
+        branch(cpu, instr,
+               (cpu->state.flags & FLAG_CARRY) == 0);
+        break;
+    case BCS:
+        branch(cpu, instr,
+               cpu->state.flags & FLAG_CARRY);
+        break;
 
     /* Jump instructions */
     case JMP:

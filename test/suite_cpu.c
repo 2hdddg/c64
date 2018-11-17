@@ -630,6 +630,86 @@ int test_branch_instructions()
             },
             .init_flags = 0,
         },
+        {
+            .name = "BVC, branch on overflow clear, jump",
+            .instructions = { 0x50, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x22,
+            },
+            .init_flags = 0,
+        },
+        {
+            .name = "BVC, branch on overflow clear, no jump",
+            .instructions = { 0x50, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = FLAG_OVERFLOW,
+        },
+        {
+            .name = "BVS, branch on overflow set, jump",
+            .instructions = { 0x70, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x22,
+            },
+            .init_flags = FLAG_OVERFLOW,
+        },
+        {
+            .name = "BVS, branch on overflow set, no jump",
+            .instructions = { 0x70, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = FLAG_NEGATIVE,
+        },
+        {
+            .name = "BCC, branch on carry clear, jump",
+            .instructions = { 0x90, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x22,
+            },
+            .init_flags = FLAG_OVERFLOW,
+        },
+        {
+            .name = "BCC, branch on carry clear, no jump",
+            .instructions = { 0x90, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "BCS, branch on carry set, jump",
+            .instructions = { 0xb0, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x22,
+            },
+            .init_flags = FLAG_CARRY|FLAG_OVERFLOW,
+        },
+        {
+            .name = "BCS, branch on carry set, no jump",
+            .instructions = { 0xb0, 0x20 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = CODE + 0x02,
+            },
+            .init_flags = 0,
+        },
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
