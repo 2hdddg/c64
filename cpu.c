@@ -31,6 +31,8 @@ struct cpu_h {
     /* Actual registers and status */
     struct cpu_state state;
 
+    bool             irq_pending;
+
     /* For debugging */
     int              execution_fd;
     bool             stack_overflow;
@@ -122,13 +124,42 @@ static void eval_neg_flag(struct cpu_state *state,
     set_flag(state, val & 0x80 ? FLAG_NEGATIVE : 0);
 }
 
+/* Carry flags are set when the register cannot properly
+ * represent the result as an unsigned value (no sign
+ * bit required).*/
+static void eval_carry_flag(struct cpu_state *state,
+                            uint16_t val)
+{
+    clear_flag(state, FLAG_CARRY);
+    set_flag(state, val > 0xff ? FLAG_CARRY : 0);
+}
+
+/* Overflow flags get set when the register cannot properly
+ * represent the result as a signed value (you overflowed 
+ * into the sign bit).  */
+static void eval_overflow_flag(struct cpu_state *state,
+                               uint8_t op1, uint8_t op2,
+                               uint8_t res)
+{
+    /* Only care about sign bits */
+    op1 &= 0x80;
+    op2 &= 0x80;
+    res &= 0x80;
+
+    /* Check if sign change */
+    bool overflowed = op1 == op2 && op1 != res;
+
+    clear_flag(state, FLAG_OVERFLOW);
+    set_flag(state, overflowed ? FLAG_OVERFLOW : 0);
+}
+
 static void trace_register(int fd, char name,
                            uint8_t val0, uint8_t val1)
 {
     char trace[10];
 
     if (val0 != val1) {
-        sprintf(trace, "%c=$%02x ", name, val1);
+        sprintf(trace, " %c=$%02x ", name, val1);
         write(fd, trace, 6);
     }
 }
@@ -360,6 +391,75 @@ static void and(struct cpu_h *cpu,
     eval_neg_flag(state, state->reg_a);
 }
 
+static void add(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t          operand = 0;
+    struct cpu_state *state = &cpu->state;
+    uint16_t         untrunced;
+    uint8_t          result;
+    uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
+
+    if (instr->operation->mode == Immediate) {
+        operand = instr->operands[0];
+    }
+    else {
+        uint16_t address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    if (state->flags & FLAG_DECIMAL_MODE) {
+        /* Copied from:
+         * http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc
+         */
+        uint8_t a_lo = (state->reg_a & 0x0f) +
+                       (operand & 0x0f) + carry;
+        uint8_t a_hi = (state->reg_a >> 4) +
+                       (operand >> 4) + a_lo > 15 ? 1 : 0;
+        a_lo += a_lo > 9 ? 6 : 0;
+
+        clear_flag(state, FLAG_NEGATIVE);
+        clear_flag(state, FLAG_CARRY);
+        clear_flag(state, FLAG_OVERFLOW);
+        clear_flag(state, FLAG_ZERO);
+
+        if (((state->reg_a + operand + carry) & 0xff) == 0) {
+            set_flag(state, FLAG_ZERO);
+        }
+        if ((a_hi & 0x08) != 0) {
+            set_flag(state, FLAG_NEGATIVE);
+        }
+        if (((a_hi << 4) ^ state->reg_a) & 0x80 &&
+            !((state->reg_a ^ operand) & 0x80)) {
+            set_flag(state, FLAG_OVERFLOW);
+        }
+
+        a_hi += a_hi > 9 ? 6 : 0;
+
+        if (a_hi > 15) {
+            set_flag(state, FLAG_CARRY);
+        }
+
+        /* Store the new value */
+        state->reg_a = ((a_hi << 4) | (a_lo & 0x0f)) & 0xff;
+    }
+    else {
+        operand += carry;
+        untrunced = state->reg_a + operand;
+        result = untrunced & 0xff;
+
+        eval_carry_flag(state, untrunced);
+        eval_overflow_flag(state, operand, state->reg_a, result);
+
+        /* Store the new value */
+        state->reg_a = result;
+        /* Set flags for new value of reg_a */
+        eval_zero_flag(state, state->reg_a);
+        eval_neg_flag(state, state->reg_a);
+    }
+}
+
+
 static void branch(struct cpu_h *cpu,
                    struct instruction *instr,
                    int do_branch)
@@ -390,8 +490,8 @@ static void branch(struct cpu_h *cpu,
     }
 }
 
-static void jmp(struct cpu_h *cpu,
-                struct instruction *instr)
+static void jump(struct cpu_h *cpu,
+                 struct instruction *instr)
 {
     uint16_t address;
     uint8_t  lo, hi, page;
@@ -427,7 +527,6 @@ static int execute(struct cpu_h *cpu,
                    struct instruction *instr)
 {
     struct cpu_state *state = &cpu->state;
-    bool             irq = false;
 
     switch (instr->operation->mnem) {
     case BRK:
@@ -435,10 +534,7 @@ static int execute(struct cpu_h *cpu,
         set_flag(state, FLAG_BRK);
         /* Exception on how program counter is counted */
         state->pc++;
-        /* BRK is non-interruptable but still handled by an
-         * interrupt request.
-         * TODO: Clear irq_disable instead? */
-        irq = true;
+        cpu->irq_pending = true;
         break;
 
     /* Stack instructions */
@@ -489,6 +585,9 @@ static int execute(struct cpu_h *cpu,
         break;
 
     /* ALU instructions */
+    case ADC:
+        add(cpu, instr);
+        break;
     case AND:
         and(cpu, instr);
         break;
@@ -529,7 +628,7 @@ static int execute(struct cpu_h *cpu,
 
     /* Jump instructions */
     case JMP:
-        jmp(cpu, instr);
+        jump(cpu, instr);
         break;
 
     default:
@@ -540,10 +639,6 @@ static int execute(struct cpu_h *cpu,
     trace_execution(cpu->execution_fd, instr,
                     &cpu->state_before, &cpu->state);
 
-    /* After trace to be able to show B flag */
-    if (irq) {
-        interrupt_request(cpu);
-    }
     return 0;
 }
 
@@ -618,6 +713,11 @@ int cpu_step(struct cpu_h *cpu,
              struct cpu_state *state_out)
 {
     struct instruction instr;
+
+    if (cpu->irq_pending) {
+        interrupt_request(cpu);
+        cpu->irq_pending = false;
+    }
 
     /* Copy for debugging purposes. */
     cpu->state_before = cpu->state;
