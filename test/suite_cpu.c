@@ -799,34 +799,34 @@ int test_logical_and_instructions()
             .init_reg_y = 0x02,
             .init_flags = 0x00,
         },
-/*
         {
             .name = "Indirect, X",
-            .instructions = { 0x81, 0x50 },
+            .instructions = { 0x21, 0x10 },
             .num_steps = 1,
             .check_flags = true,
             .check_reg_a = true,
             .state = {
-                .reg_a = 0x80,
-                .flags = FLAG_NEGATIVE,
+                .reg_a = 0x02,
+                .flags = 0x00,
             },
-            .init_reg_a = 0xff,
+            .init_reg_a = 0x03,
+            .init_reg_x = 0x02,
             .init_flags = 0x00,
         },
         {
             .name = "Indirect, Y",
-            .instructions = { 0x91, 0x14 },
-            .num_steps = 3,
+            .instructions = { 0x31, 0x10 },
+            .num_steps = 1,
             .check_flags = true,
             .check_reg_a = true,
             .state = {
-                .reg_a = 0x80,
-                .flags = FLAG_NEGATIVE,
+                .reg_a = 0x03,
+                .flags = 0x00,
             },
             .init_reg_a = 0xff,
             .init_flags = 0x00,
+            .init_reg_y = 0x03,
         },
-*/
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
