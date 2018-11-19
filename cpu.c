@@ -665,7 +665,8 @@ static int fetch_and_decode(struct cpu_h *cpu,
         operands[1] = mem_get(mem, cpu->state.pc++);
         break;
     default:
-        printf("Unknown number of operands\n");
+        printf("Unknown number of operands for mode: %d\n",
+               instr->operation->mode);
         break;
     }
 
