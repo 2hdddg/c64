@@ -68,6 +68,7 @@ int each_before()
 {
     mem_create(&_mem);
     memset(_ram, 0, RAM_SIZE);
+    memset(&_state, 0, sizeof(_state));
 
     /* Known values at 0x4000 */
     _ram[0x4000] = 0;
@@ -970,3 +971,144 @@ int test_add_with_carry_instructions()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_subract_with_carry_instructions()
+{
+    struct test tests[] = {
+        /* Tests all different supported addressing modes */
+        {
+            .name = "Immediate",
+            .instructions = { 0xe9, 0x10 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x00,
+            },
+            .init_reg_a = 0x10,
+        },
+/*
+        {
+            .name = "Zero page",
+            .instructions = { 0x65, 0x01, },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x21,
+            },
+            .init_reg_a = 0x01,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x75, 0x00, },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x22,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x02,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x6d, 0x00, 0x40, },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x05,
+            },
+            .init_reg_a = 0x05,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x7d, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x04,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x03,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0x79, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x62,
+            },
+            .init_reg_a = 0x60,
+            .init_reg_y = 0x02,
+        },
+        {
+            .name = "Indirect, X",
+            .instructions = { 0x61, 0x10 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x05,
+            },
+            .init_reg_a = 0x03,
+            .init_reg_x = 0x02,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0x71, 0x10 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x0a,
+            },
+            .init_reg_a = 0x07,
+            .init_reg_y = 0x03,
+        },
+*/
+        /* All tests below assumes implementation of add is same
+         * regardless of address mode. */
+
+        /* Test adds with carry. */
+/*
+        {
+            .name = "Carry is set",
+            .instructions = { 0x69, 0b11110000 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .check_flags = true,
+            .state = {
+                .reg_a = 0x00,
+                .flags = FLAG_CARRY|FLAG_ZERO,
+            },
+            .init_reg_a = 0b00010000,
+        },
+        {
+            .name = "Carry is used",
+            .instructions = { 0x69, 0x00 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .check_flags = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x00,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Overflow is set",
+            .instructions = { 0x69, 0b01000000 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .check_flags = true,
+            .state = {
+                .reg_a = 0x80,
+                .flags = FLAG_OVERFLOW|FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0b01000000,
+        },
+*/
+        /* Test adds with FLAG_DECIMAL_MODE set. */
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+

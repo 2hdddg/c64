@@ -459,6 +459,41 @@ static void add(struct cpu_h *cpu,
     }
 }
 
+static void subtract(struct cpu_h *cpu,
+                     struct instruction *instr)
+{
+    uint8_t          operand = 0;
+    struct cpu_state *state = &cpu->state;
+    uint16_t         untrunced;
+    uint8_t          result;
+    uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
+
+    if (instr->operation->mode == Immediate) {
+        operand = instr->operands[0];
+    }
+    else {
+        uint16_t address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    if (state->flags & FLAG_DECIMAL_MODE) 
+        printf("Decimal mode not supported on sub\n");
+    else {
+        operand += carry;
+        untrunced = state->reg_a - operand;
+        result = untrunced & 0xff;
+
+        eval_carry_flag(state, untrunced);
+        eval_overflow_flag(state, operand, state->reg_a, result);
+
+        /* Store the new value */
+        state->reg_a = result;
+        /* Set flags for new value of reg_a */
+        eval_zero_flag(state, state->reg_a);
+        eval_neg_flag(state, state->reg_a);
+    }
+}
+
 
 static void branch(struct cpu_h *cpu,
                    struct instruction *instr,
@@ -588,6 +623,9 @@ static int execute(struct cpu_h *cpu,
     case ADC:
         add(cpu, instr);
         break;
+    case SBC:
+        subtract(cpu, instr);
+        break;
     case AND:
         and(cpu, instr);
         break;
@@ -629,6 +667,14 @@ static int execute(struct cpu_h *cpu,
     /* Jump instructions */
     case JMP:
         jump(cpu, instr);
+        break;
+
+    /* Status register instuctions */
+    case CLC:
+        clear_flag(cpu, FLAG_CARRY);
+        break;
+    case SEC:
+        set_flag(cpu, FLAG_CARRY);
         break;
 
     default:
