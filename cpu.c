@@ -34,7 +34,7 @@ struct cpu_h {
     bool             irq_pending;
 
     /* For debugging */
-    int              execution_fd;
+    int              disassemble_fd;
     bool             stack_overflow;
     bool             stack_underflow;
     struct cpu_state state_before;
@@ -479,7 +479,7 @@ static void subtract(struct cpu_h *cpu,
     if (state->flags & FLAG_DECIMAL_MODE) 
         printf("Decimal mode not supported on sub\n");
     else {
-        operand += carry;
+        operand -= carry;
         untrunced = state->reg_a - operand;
         result = untrunced & 0xff;
 
@@ -671,10 +671,10 @@ static int execute(struct cpu_h *cpu,
 
     /* Status register instuctions */
     case CLC:
-        clear_flag(cpu, FLAG_CARRY);
+        clear_flag(&cpu->state, FLAG_CARRY);
         break;
     case SEC:
-        set_flag(cpu, FLAG_CARRY);
+        set_flag(&cpu->state, FLAG_CARRY);
         break;
 
     default:
@@ -682,7 +682,7 @@ static int execute(struct cpu_h *cpu,
     }
 
     /* Writes instruction and registers to debug fd */
-    trace_execution(cpu->execution_fd, instr,
+    trace_execution(cpu->disassemble_fd, instr,
                     &cpu->state_before, &cpu->state);
 
     return 0;
@@ -720,7 +720,7 @@ static int fetch_and_decode(struct cpu_h *cpu,
 }
 
 int cpu_create(struct mem_h *mem,
-               int execution_fd,
+               int disassemble_fd,
                struct cpu_h **cpu_out)
 {
     struct cpu_h *cpu;
@@ -734,7 +734,7 @@ int cpu_create(struct mem_h *mem,
 
     /* Initialize self */
     cpu->mem = mem;
-    cpu->execution_fd = execution_fd;
+    cpu->disassemble_fd = disassemble_fd;
 
     *cpu_out = cpu;
     return 0;

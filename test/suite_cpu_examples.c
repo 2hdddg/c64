@@ -120,6 +120,8 @@ int test_add_with_carry_big_numbers()
 
 int test_subtract_with_carry_big_numbers()
 {
+    int failures = 0;
+
     /* Subtracts combination of 16 bit numbers.
      *
      */
@@ -162,14 +164,16 @@ int test_subtract_with_carry_big_numbers()
             uint16_t res = (_ram[0x5100] & 0xff) | (_ram[0x5101] << 8);
             uint16_t real_res = (op1 - op2);
             if (res != real_res) {
-                printf("%d, %04x + %04x => %04x "
+                printf("%d, %04x - %04x => %04x "
                        "should be %04x\n",
                        n, op1, op2, res, real_res);
-                return 0;
+                failures++;
             }
             n++;
         }
     }
 
-    return 1;
+    printf("Failed %d out of %d\n", failures, n);
+
+    return failures==0;
 }
