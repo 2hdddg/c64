@@ -127,12 +127,14 @@ static void eval_neg_flag(struct cpu_state *state,
 /* Carry flags are set when the register cannot properly
  * represent the result as an unsigned value (no sign
  * bit required).*/
+/*
 static void eval_carry_flag(struct cpu_state *state,
                             uint16_t val)
 {
     clear_flag(state, FLAG_CARRY);
     set_flag(state, val > 0xff ? FLAG_CARRY : 0);
 }
+*/
 
 /* Overflow flags get set when the register cannot properly
  * represent the result as a signed value (you overflowed 
@@ -448,7 +450,8 @@ static void add(struct cpu_h *cpu,
         untrunced = state->reg_a + operand;
         result = untrunced & 0xff;
 
-        eval_carry_flag(state, untrunced);
+        clear_flag(state, FLAG_CARRY);
+        set_flag(state, untrunced > 0xff ? FLAG_CARRY : 0);
         eval_overflow_flag(state, operand, state->reg_a, result);
 
         /* Store the new value */
@@ -464,9 +467,8 @@ static void subtract(struct cpu_h *cpu,
 {
     uint8_t          operand = 0;
     struct cpu_state *state = &cpu->state;
-    uint16_t         untrunced;
     uint8_t          result;
-    uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
+    uint8_t          borrow = state->flags & FLAG_CARRY ? 1 : 0;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
@@ -479,11 +481,12 @@ static void subtract(struct cpu_h *cpu,
     if (state->flags & FLAG_DECIMAL_MODE) 
         printf("Decimal mode not supported on sub\n");
     else {
-        operand -= carry;
-        untrunced = state->reg_a - operand;
-        result = untrunced & 0xff;
+        uint8_t two_compl = ~operand + borrow;
 
-        eval_carry_flag(state, untrunced);
+        result = (state->reg_a + two_compl) & 0xff;
+
+        clear_flag(state, FLAG_CARRY);
+        set_flag(state, operand < state->reg_a ? FLAG_CARRY : 0);
         eval_overflow_flag(state, operand, state->reg_a, result);
 
         /* Store the new value */

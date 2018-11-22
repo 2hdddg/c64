@@ -84,13 +84,14 @@ int test_add_with_carry_big_numbers()
     const uint16_t numbers[] = {
         0, 100, 65535, 78, 290, 1100, 1001, 7321,
     };
+    const int num_numbers = sizeof(numbers)/sizeof(numbers[0]);
 
     int n = 0;
-    for (int i = 0; i < sizeof(numbers); i++) {
+    for (int i = 0; i < num_numbers - 1; i++) {
         uint16_t op1 = numbers[i];
         _ram[0x5000] = op1 & 0xff;
         _ram[0x5002] = op1 >> 8;
-        for (int j = i + 1; j < sizeof(numbers); j++) {
+        for (int j = i + 1; j < num_numbers; j++) {
             uint16_t op2 = numbers[j];
             _ram[0x5001] = op2 & 0xff;
             _ram[0x5003] = op2 >> 8;
@@ -118,7 +119,7 @@ int test_add_with_carry_big_numbers()
     return 1;
 }
 
-int test_subtract_with_carry_big_numbers()
+int test_subtract_with_carry_big_positive_numbers()
 {
     int failures = 0;
 
@@ -141,15 +142,16 @@ int test_subtract_with_carry_big_numbers()
     const uint8_t num_program_steps = 7;
     memcpy(_ram + CODE, program, sizeof(program));
     const uint16_t numbers[] = {
-        0, 100, 65535, 78, 290, 1100, 1001, 7321,
+        65535, 30431, 15999, 9000, 2132, 1024, 500, 319, 50, 30, 7,
     };
+    const int num_numbers = sizeof(numbers)/sizeof(numbers[0]);
 
     int n = 0;
-    for (int i = 0; i < sizeof(numbers); i++) {
+    for (int i = 0; i < num_numbers - 1; i++) {
         uint16_t op1 = numbers[i];
         _ram[0x5000] = op1 & 0xff;
         _ram[0x5002] = op1 >> 8;
-        for (int j = i + 1; j < sizeof(numbers); j++) {
+        for (int j = i + 1; j < num_numbers; j++) {
             uint16_t op2 = numbers[j];
             _ram[0x5001] = op2 & 0xff;
             _ram[0x5003] = op2 >> 8;

@@ -985,6 +985,7 @@ int test_subract_with_carry_instructions()
                 .reg_a = 0x00,
             },
             .init_reg_a = 0x10,
+            .init_flags = FLAG_CARRY,
         },
 /*
         {
