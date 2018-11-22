@@ -1113,3 +1113,24 @@ int test_subract_with_carry_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+int test_rts()
+{
+    struct test tests[] = {
+        /* Tests all different supported addressing modes */
+        {
+            .name = "Returns to address on stack",
+            .instructions = { 0xa9, 0x10, /* LDA #$10 */
+                              0x48,       /* PHA */
+                              0xa9, 0x20, /* LDA #$20 */
+                              0x48,       /* PHA */
+                              0x60,       /* RTS */
+                            },
+            .num_steps = 5,
+            .check_pc = true,
+            .state = {
+                .pc = 0x1020,
+            },
+        },
+    };
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

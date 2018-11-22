@@ -561,6 +561,17 @@ static void jump(struct cpu_h *cpu,
     cpu->state.pc = address;
 }
 
+static void ret(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint16_t address;
+    uint8_t  lo = stack_pop(cpu);
+    uint8_t  hi = stack_pop(cpu);
+
+    address = make_address(hi, lo);
+    cpu->state.pc = address;
+}
+
 static int execute(struct cpu_h *cpu,
                    struct instruction *instr)
 {
@@ -670,6 +681,9 @@ static int execute(struct cpu_h *cpu,
     /* Jump instructions */
     case JMP:
         jump(cpu, instr);
+        break;
+    case RTS:
+        ret(cpu, instr);
         break;
 
     /* Status register instuctions */
