@@ -1139,3 +1139,70 @@ int test_rts()
     };
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+/* ASL */
+int test_arithmetic_shift_left()
+{
+    struct test tests[] = {
+        {
+            .name = "Accumulator",
+            .instructions = { 0x0a /* ASL A */ },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x82,
+                .flags = FLAG_NEGATIVE|FLAG_CARRY,
+            },
+            /* Checks that MSB goes into carry and that zero
+             * is padded to the right. */
+            .init_reg_a = 0xc1,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page",
+            .instructions = { 0x06, 0x01, },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x40,
+            },
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x16, 0x00, },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x40,
+            },
+            .init_reg_x = 0x01,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x0e, 0x00, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x00,
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x1e, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x02,
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

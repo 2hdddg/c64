@@ -213,6 +213,9 @@ static void trace_execution(int fd, struct instruction *instr,
         sprintf(trace, "$%02x%02x,Y",
                 instr->operands[1], instr->operands[0]);
         break;
+    case Accumulator:
+        sprintf(trace, "A");
+        break;
     case Immediate:
         sprintf(trace, "#$%02x", instr->operands[0]);
         break;
@@ -391,6 +394,31 @@ static void and(struct cpu_h *cpu,
     /* Set flags for new value of reg_a */
     eval_zero_flag(state, state->reg_a);
     eval_neg_flag(state, state->reg_a);
+}
+
+static void asl(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t res;
+    uint8_t operand;
+
+    if (instr->operation->mode == Accumulator) {
+        operand = cpu->state.reg_a;
+    }
+    else {
+        uint16_t address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    res = operand << 1;
+    clear_flag(&cpu->state, FLAG_CARRY);
+    if (operand & 0x80) {
+        set_flag(&cpu->state, FLAG_CARRY);
+    }
+    /* Set flags for new value of reg_a */
+    eval_zero_flag(&cpu->state, res);
+    eval_neg_flag(&cpu->state, res);
+    cpu->state.reg_a = res;
 }
 
 static void add(struct cpu_h *cpu,
@@ -642,6 +670,9 @@ static int execute(struct cpu_h *cpu,
         break;
     case AND:
         and(cpu, instr);
+        break;
+    case ASL:
+        asl(cpu, instr);
         break;
 
     /* Branch instructions */
