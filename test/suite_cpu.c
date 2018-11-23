@@ -987,83 +987,88 @@ int test_subract_with_carry_instructions()
             .init_reg_a = 0x10,
             .init_flags = FLAG_CARRY,
         },
-/*
         {
             .name = "Zero page",
-            .instructions = { 0x65, 0x01, },
+            .instructions = { 0xe5, 0x01, },
             .num_steps = 1,
             .check_reg_a = true,
             .state = {
-                .reg_a = 0x21,
+                .reg_a = 0x20,
             },
-            .init_reg_a = 0x01,
+            .init_reg_a = 0x40,
+            .init_flags = FLAG_CARRY,
         },
         {
             .name = "Zero page, X",
-            .instructions = { 0x75, 0x00, },
+            .instructions = { 0xf5, 0x00, },
             .num_steps = 1,
             .check_reg_a = true,
             .state = {
                 .reg_a = 0x22,
             },
             .init_reg_x = 0x01,
-            .init_reg_a = 0x02,
+            .init_reg_a = 0x42,
+            .init_flags = FLAG_CARRY,
         },
         {
             .name = "Absolute",
-            .instructions = { 0x6d, 0x00, 0x40, },
+            .instructions = { 0xed, 0x00, 0x40, },
             .num_steps = 1,
             .check_reg_a = true,
             .state = {
                 .reg_a = 0x05,
             },
             .init_reg_a = 0x05,
+            .init_flags = FLAG_CARRY,
         },
         {
             .name = "Absolute, X",
-            .instructions = { 0x7d, 0x00, 0x40 },
+            .instructions = { 0xfd, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x02,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x03,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0xf9, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x5e,
+            },
+            .init_reg_a = 0x60,
+            .init_reg_y = 0x02,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Indirect, X",
+            .instructions = { 0xe1, 0x10 },
+            .num_steps = 1,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+            },
+            .init_reg_a = 0x03,
+            .init_reg_x = 0x02,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0xf1, 0x10 },
             .num_steps = 1,
             .check_reg_a = true,
             .state = {
                 .reg_a = 0x04,
             },
-            .init_reg_x = 0x01,
-            .init_reg_a = 0x03,
-        },
-        {
-            .name = "Absolute, Y",
-            .instructions = { 0x79, 0x00, 0x40 },
-            .num_steps = 1,
-            .check_reg_a = true,
-            .state = {
-                .reg_a = 0x62,
-            },
-            .init_reg_a = 0x60,
-            .init_reg_y = 0x02,
-        },
-        {
-            .name = "Indirect, X",
-            .instructions = { 0x61, 0x10 },
-            .num_steps = 1,
-            .check_reg_a = true,
-            .state = {
-                .reg_a = 0x05,
-            },
-            .init_reg_a = 0x03,
-            .init_reg_x = 0x02,
-        },
-        {
-            .name = "Indirect, Y",
-            .instructions = { 0x71, 0x10 },
-            .num_steps = 1,
-            .check_reg_a = true,
-            .state = {
-                .reg_a = 0x0a,
-            },
             .init_reg_a = 0x07,
             .init_reg_y = 0x03,
+            .init_flags = FLAG_CARRY,
         },
-*/
         /* All tests below assumes implementation of add is same
          * regardless of address mode. */
 
