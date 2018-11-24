@@ -161,8 +161,9 @@ int check_test(struct test *test, struct cpu_state *state)
         if (test->check_ram_val != _ram[test->check_ram_at]) {
             printf("%s: failed. Expected ram at %04x to be %02x "
                    "but was %02x\n",
-                   test->name, test->check_ram_at, test->check_ram_val,
-                   _ram[test->check_ram_at]);
+                   test->name, test->check_ram_at,
+                   (uint8_t)test->check_ram_val,
+                   (uint8_t)_ram[test->check_ram_at]);
             return 0;
         }
     }
@@ -1292,47 +1293,45 @@ int test_logical_shift_right()
             .init_reg_a = 0xc1,
             .init_flags = 0x00,
         },
-/*
         {
             .name = "Zero page",
-            .instructions = { 0x06, 0x01, },
+            .instructions = { 0x46, 0x01, },
             .num_steps = 1,
             .check_ram_at = 0x0001,
-            .check_ram_val = 0x40,
+            .check_ram_val = 0x10,
         },
         {
             .name = "Zero page, X",
-            .instructions = { 0x16, 0x00, },
+            .instructions = { 0x56, 0x00, },
             .num_steps = 1,
             .check_ram_at = 0x0001,
-            .check_ram_val = 0x40,
+            .check_ram_val = 0x10,
             .init_reg_x = 0x01,
         },
         {
             .name = "Absolute",
-            .instructions = { 0x0e, 0x03, 0x40, },
+            .instructions = { 0x4e, 0x03, 0x40, },
             .num_steps = 1,
             .check_flags = true,
             .check_ram_at = 0x4003,
-            .check_ram_val = 0x06,
+            .check_ram_val = 0x01,
             .state = {
-                .flags = 0x00,
+                .flags = FLAG_CARRY,
             },
             .init_flags = 0x00,
         },
         {
             .name = "Absolute, X",
-            .instructions = { 0x1e, 0x00, 0x40 },
+            .instructions = { 0x5e, 0x00, 0x40 },
             .num_steps = 1,
             .check_flags = true,
             .check_ram_at = 0x4001,
-            .check_ram_val = 0x02,
+            .check_ram_val = 0x00,
             .state = {
-                .flags = 0,
+                .flags = FLAG_CARRY|FLAG_ZERO,
             },
             .init_reg_x = 0x01,
         },
-*/
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
@@ -1357,50 +1356,48 @@ int test_roll_right()
             .init_reg_a = 0x11,
             .init_flags = FLAG_CARRY,
         },
-/*
         {
             .name = "Zero page",
-            .instructions = { 0x26, 0x01, },
+            .instructions = { 0x66, 0x01, },
             .num_steps = 1,
             .check_ram_at = 0x0001,
-            .check_ram_val = 0x41,
-            .init_flags = FLAG_CARRY,
+            .check_ram_val = 0x10,
+            .init_flags = 0,
         },
         {
             .name = "Zero page, X",
-            .instructions = { 0x36, 0x00, },
+            .instructions = { 0x76, 0x00, },
             .num_steps = 1,
             .check_ram_at = 0x0001,
-            .check_ram_val = 0x40,
+            .check_ram_val = 0x10,
             .init_reg_x = 0x01,
             .init_flags = 0x00,
         },
         {
             .name = "Absolute",
-            .instructions = { 0x2e, 0x03, 0x40, },
+            .instructions = { 0x6e, 0x03, 0x40, },
             .num_steps = 1,
             .check_flags = true,
             .check_ram_at = 0x4003,
-            .check_ram_val = 0x06,
+            .check_ram_val = 0x01,
             .state = {
-                .flags = 0x00,
+                .flags = FLAG_CARRY,
             },
             .init_flags = 0x00,
         },
         {
             .name = "Absolute, X",
-            .instructions = { 0x3e, 0x00, 0x40 },
+            .instructions = { 0x7e, 0x00, 0x40 },
             .num_steps = 1,
             .check_flags = true,
             .check_ram_at = 0x4001,
-            .check_ram_val = 0x03,
+            .check_ram_val = 0x00,
             .state = {
-                .flags = 0,
+                .flags = FLAG_CARRY|FLAG_ZERO,
             },
             .init_reg_x = 0x01,
-            .init_flags = FLAG_CARRY,
+            .init_flags = 0,
         },
-*/
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
