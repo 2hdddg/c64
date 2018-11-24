@@ -867,6 +867,21 @@ static int execute(struct cpu_h *cpu,
     case SEC:
         set_flag(&cpu->state, FLAG_CARRY);
         break;
+    case CLI:
+        clear_flag(&cpu->state, FLAG_IRQ_DISABLE);
+        break;
+    case SEI:
+        set_flag(&cpu->state, FLAG_IRQ_DISABLE);
+        break;
+    case SED:
+        set_flag(&cpu->state, FLAG_DECIMAL_MODE);
+        break;
+    case CLD:
+        clear_flag(&cpu->state, FLAG_DECIMAL_MODE);
+        break;
+    case CLV:
+        clear_flag(&cpu->state, FLAG_OVERFLOW);
+        break;
 
     default:
         printf("Unknown mnem\n");

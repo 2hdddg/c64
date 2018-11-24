@@ -1455,3 +1455,81 @@ int test_bit_instruction()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_status_instructions()
+{
+    struct test tests[] = {
+        {
+            .name = "CLC, clear carry",
+            .instructions = { 0x18 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_CARRY|FLAG_NEGATIVE,
+        },
+        {
+            .name = "SEC, set carry",
+            .instructions = { 0x38 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "CLI, clear interrupt",
+            .instructions = { 0x58 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_CARRY|FLAG_IRQ_DISABLE,
+        },
+        {
+            .name = "SEI, set interrupt",
+            .instructions = { 0x78 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_IRQ_DISABLE,
+            },
+            .check_flags = true,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "CLV, clear overflow",
+            .instructions = { 0xb8 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_IRQ_DISABLE,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_OVERFLOW|FLAG_IRQ_DISABLE,
+        },
+        {
+            .name = "SED, set decimal",
+            .instructions = { 0xf8 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_DECIMAL_MODE,
+            },
+            .check_flags = true,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "CLD, clear decimal",
+            .instructions = { 0xd8 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_OVERFLOW,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_OVERFLOW|FLAG_DECIMAL_MODE,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
