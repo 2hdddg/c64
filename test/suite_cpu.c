@@ -80,6 +80,8 @@ static void set_known_mem_values()
     _ram[0x0003] = 0x40;
     _ram[0x0004] = 0x50;
     _ram[0x0005] = 0x60;
+    _ram[0x0006] = 0x80; /* MSB, bit 7 */
+    _ram[0x0007] = 0x40; /* Bit 6 */
     /* Zero page vector pointing to known values at 0x4000 */
     _ram[0x0010] = 0x00;
     _ram[0x0011] = 0x40;
@@ -1397,6 +1399,57 @@ int test_roll_right()
             },
             .init_reg_x = 0x01,
             .init_flags = 0,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+/* BIT */
+int test_bit_instruction()
+{
+    struct test tests[] = {
+        /* Tests below tests bit settings using zeropage */
+        {
+            .name = "MSB should set negative",
+            .instructions = { 0x24, 0x06 }, /* 0x0006: 0x80 */
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_a = 0xff,
+        },
+        {
+            .name = "Bit 6 should set overflow",
+            .instructions = { 0x24, 0x07 }, /* 0x0007: 0x40 */
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_OVERFLOW,
+            },
+            .check_flags = true,
+            .init_reg_a = 0xff,
+        },
+        {
+            .name = "Accumulator AND with op evals to ZERO",
+            .instructions = { 0x24, 0x06 }, /* 0x0006: 0x80 */
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_ZERO|FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_a = (uint8_t)~0x80,
+        },
+        /* Check on absolute */
+        {
+            .name = "Absolute",
+            .instructions = { 0x2c, 0x06, 0x00 }, /* 0x0006: 0x80 */
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_a = 0xff,
         },
     };
 

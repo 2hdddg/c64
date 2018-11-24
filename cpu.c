@@ -533,6 +533,25 @@ static void ror(struct cpu_h *cpu,
     }
 }
 
+static void bit(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t  operand;
+    uint16_t address;
+
+    address = get_address_from_mode(cpu, instr);
+    operand = mem_get(cpu->mem, address);
+
+    clear_flag(&cpu->state, FLAG_NEGATIVE);
+    clear_flag(&cpu->state, FLAG_OVERFLOW);
+    clear_flag(&cpu->state, FLAG_ZERO);
+
+    set_flag(&cpu->state, operand & 0x80 ? FLAG_NEGATIVE : 0);
+    set_flag(&cpu->state, operand & 0x40 ? FLAG_OVERFLOW : 0);
+    set_flag(&cpu->state, (operand & cpu->state.reg_a) == 0 ?
+             FLAG_ZERO : 0);
+}
+
 static void add(struct cpu_h *cpu,
                 struct instruction *instr)
 {
@@ -794,6 +813,9 @@ static int execute(struct cpu_h *cpu,
         break;
     case ROR:
         ror(cpu, instr);
+        break;
+    case BIT:
+        bit(cpu, instr);
         break;
 
     /* Branch instructions */
