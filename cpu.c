@@ -401,12 +401,13 @@ static void asl(struct cpu_h *cpu,
 {
     uint8_t res;
     uint8_t operand;
+    uint16_t address;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
     }
     else {
-        uint16_t address = get_address_from_mode(cpu, instr);
+        address = get_address_from_mode(cpu, instr);
         operand = mem_get(cpu->mem, address);
     }
 
@@ -415,10 +416,48 @@ static void asl(struct cpu_h *cpu,
     if (operand & 0x80) {
         set_flag(&cpu->state, FLAG_CARRY);
     }
-    /* Set flags for new value of reg_a */
     eval_zero_flag(&cpu->state, res);
     eval_neg_flag(&cpu->state, res);
-    cpu->state.reg_a = res;
+
+    if (instr->operation->mode == Accumulator) {
+        cpu->state.reg_a = res;
+    }
+    else {
+        mem_set(cpu->mem, address, res);
+    }
+}
+
+static void rol(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t res;
+    uint8_t operand;
+    uint16_t address;
+    uint8_t carry = cpu->state.flags & FLAG_CARRY ? 1 : 0;
+
+    if (instr->operation->mode == Accumulator) {
+        operand = cpu->state.reg_a;
+    }
+    else {
+        address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    /* Next carry */
+    clear_flag(&cpu->state, FLAG_CARRY);
+    if (operand & 0x80) {
+        set_flag(&cpu->state, FLAG_CARRY);
+    }
+    res = (operand << 1) | carry;
+    eval_zero_flag(&cpu->state, res);
+    eval_neg_flag(&cpu->state, res);
+
+    if (instr->operation->mode == Accumulator) {
+        cpu->state.reg_a = res;
+    }
+    else {
+        mem_set(cpu->mem, address, res);
+    }
 }
 
 static void add(struct cpu_h *cpu,
@@ -673,6 +712,9 @@ static int execute(struct cpu_h *cpu,
         break;
     case ASL:
         asl(cpu, instr);
+        break;
+    case ROL:
+        rol(cpu, instr);
         break;
 
     /* Branch instructions */

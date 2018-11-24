@@ -64,12 +64,8 @@ void mem_destroy(struct mem_h *mem)
 {
 }
 
-int each_before()
+static void set_known_mem_values()
 {
-    mem_create(&_mem);
-    memset(_ram, 0, RAM_SIZE);
-    memset(&_state, 0, sizeof(_state));
-
     /* Known values at 0x4000 */
     _ram[0x4000] = 0;
     _ram[0x4001] = 1;
@@ -97,8 +93,15 @@ int each_before()
     /* Known value on the stack */
     _ram[0x0110] = 0x80;
     _ram[0x0180] = FLAG_DECIMAL_MODE|FLAG_BRK;
+}
 
-    /* Use 0x5000 for whatever */
+int each_before()
+{
+    mem_create(&_mem);
+    memset(_ram, 0, RAM_SIZE);
+    memset(&_state, 0, sizeof(_state));
+
+    set_known_mem_values();
 
     return cpu_create(_mem, STDOUT_FILENO, &_cpu) == 0;
 }
@@ -174,6 +177,7 @@ int run_tests(struct test *tests, int num)
     for (int i=0; i<num; i++) {
         printf("Testing %s\n", tests[i].name);
         fflush(stdout);
+        set_known_mem_values();
         memcpy(_ram+CODE, tests[i].instructions, 10);
         _state.pc = CODE;
         _state.reg_a = tests[i].init_reg_a;;
@@ -1163,30 +1167,26 @@ int test_arithmetic_shift_left()
             .name = "Zero page",
             .instructions = { 0x06, 0x01, },
             .num_steps = 1,
-            .check_reg_a = true,
-            .state = {
-                .reg_a = 0x40,
-            },
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x40,
         },
         {
             .name = "Zero page, X",
             .instructions = { 0x16, 0x00, },
             .num_steps = 1,
-            .check_reg_a = true,
-            .state = {
-                .reg_a = 0x40,
-            },
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x40,
             .init_reg_x = 0x01,
         },
         {
             .name = "Absolute",
-            .instructions = { 0x0e, 0x00, 0x40, },
+            .instructions = { 0x0e, 0x03, 0x40, },
             .num_steps = 1,
             .check_flags = true,
-            .check_reg_a = true,
+            .check_ram_at = 0x4003,
+            .check_ram_val = 0x06,
             .state = {
-                .reg_a = 0x00,
-                .flags = FLAG_ZERO,
+                .flags = 0x00,
             },
             .init_flags = 0x00,
         },
@@ -1195,9 +1195,9 @@ int test_arithmetic_shift_left()
             .instructions = { 0x1e, 0x00, 0x40 },
             .num_steps = 1,
             .check_flags = true,
-            .check_reg_a = true,
+            .check_ram_at = 0x4001,
+            .check_ram_val = 0x02,
             .state = {
-                .reg_a = 0x02,
                 .flags = 0,
             },
             .init_reg_x = 0x01,
