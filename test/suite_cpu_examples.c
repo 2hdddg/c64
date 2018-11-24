@@ -208,14 +208,55 @@ int test_double_integer_of_four_bytes()
         cpu_step(_cpu, NULL);
     }
 
-    doubled  = _ram[0x5003] << 24;
-    doubled |= _ram[0x5002] << 16;
-    doubled |= _ram[0x5001] << 8;
-    doubled |= _ram[0x5000];
+    doubled  = (uint8_t)_ram[0x5003] << 24;
+    doubled |= (uint8_t)_ram[0x5002] << 16;
+    doubled |= (uint8_t)_ram[0x5001] << 8;
+    doubled |= (uint8_t)_ram[0x5000];
 
     if (doubled != val * 2) {
         printf("Failed to double %04x, got %04x\n should be %04x",
                val, doubled, val * 2);
+        return 0;
+    }
+    return 1;
+}
+
+int test_half_integer_of_four_bytes()
+{
+    const uint8_t  program[] = {
+        /* Input numbers at 0x5000,
+         * Result at 0x5100 */
+
+        /* LSR $5003 */ 0x4e, 0x03, 0x50,
+        /* ROR $5002 */ 0x6e, 0x02, 0x50,
+        /* ROR $5001 */ 0x6e, 0x01, 0x50,
+        /* ROR $5000 */ 0x6e, 0x00, 0x50,
+    };
+    const uint32_t val = 0x02814121;
+    const uint8_t num_program_steps = 4;
+    uint32_t halfed = 0;
+
+    _ram[0x5000] = val & 0xff;
+    _ram[0x5001] = (val >> 8) & 0xff;
+    _ram[0x5002] = (val >> 16) & 0xff;
+    _ram[0x5003] = (val >> 24) & 0xff;
+    memcpy(_ram + CODE, program, sizeof(program));
+    _state.pc = CODE;
+    _state.sp = 0xff;
+    _state.flags = 0x00;
+    cpu_set_state(_cpu, &_state);
+    for (int s = 0; s < num_program_steps; s++) {
+        cpu_step(_cpu, NULL);
+    }
+
+    halfed  = (uint8_t)_ram[0x5003] << 24;
+    halfed |= (uint8_t)_ram[0x5002] << 16;
+    halfed |= (uint8_t)_ram[0x5001] << 8;
+    halfed |= (uint8_t)_ram[0x5000];
+
+    if (halfed != val / 2) {
+        printf("Failed to halfe %04x, got %04x should be %04x\n",
+               val, halfed, val / 2);
         return 0;
     }
     return 1;

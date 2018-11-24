@@ -1272,3 +1272,136 @@ int test_roll_left()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+/* LSR */
+int test_logical_shift_right()
+{
+    struct test tests[] = {
+        {
+            .name = "Accumulator",
+            .instructions = { 0x4a /* LSR A */ },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x60,
+                .flags = FLAG_CARRY,
+            },
+            /* Checks that LSB goes into carry and that zero
+             * is padded to the left. */
+            .init_reg_a = 0xc1,
+            .init_flags = 0x00,
+        },
+/*
+        {
+            .name = "Zero page",
+            .instructions = { 0x06, 0x01, },
+            .num_steps = 1,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x40,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x16, 0x00, },
+            .num_steps = 1,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x40,
+            .init_reg_x = 0x01,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x0e, 0x03, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4003,
+            .check_ram_val = 0x06,
+            .state = {
+                .flags = 0x00,
+            },
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x1e, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4001,
+            .check_ram_val = 0x02,
+            .state = {
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+        },
+*/
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+/* ROR */
+int test_roll_right()
+{
+    struct test tests[] = {
+        {
+            .name = "Accumulator",
+            .instructions = { 0x6a /* ROL A */ },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x88,
+                .flags = FLAG_NEGATIVE|FLAG_CARRY,
+            },
+            /* Checks that MSB goes into carry and that carry
+             * is padded to the right. */
+            .init_reg_a = 0x11,
+            .init_flags = FLAG_CARRY,
+        },
+/*
+        {
+            .name = "Zero page",
+            .instructions = { 0x26, 0x01, },
+            .num_steps = 1,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x41,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x36, 0x00, },
+            .num_steps = 1,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x40,
+            .init_reg_x = 0x01,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x2e, 0x03, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4003,
+            .check_ram_val = 0x06,
+            .state = {
+                .flags = 0x00,
+            },
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x3e, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4001,
+            .check_ram_val = 0x03,
+            .state = {
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+            .init_flags = FLAG_CARRY,
+        },
+*/
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

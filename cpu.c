@@ -402,6 +402,7 @@ static void asl(struct cpu_h *cpu,
     uint8_t res;
     uint8_t operand;
     uint16_t address;
+    uint8_t  carry_out;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -412,10 +413,9 @@ static void asl(struct cpu_h *cpu,
     }
 
     res = operand << 1;
+    carry_out = operand & 0x80;
     clear_flag(&cpu->state, FLAG_CARRY);
-    if (operand & 0x80) {
-        set_flag(&cpu->state, FLAG_CARRY);
-    }
+    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
     eval_zero_flag(&cpu->state, res);
     eval_neg_flag(&cpu->state, res);
 
@@ -427,13 +427,13 @@ static void asl(struct cpu_h *cpu,
     }
 }
 
-static void rol(struct cpu_h *cpu,
+static void lsr(struct cpu_h *cpu,
                 struct instruction *instr)
 {
     uint8_t res;
     uint8_t operand;
     uint16_t address;
-    uint8_t carry = cpu->state.flags & FLAG_CARRY ? 1 : 0;
+    uint8_t  carry_out;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -443,19 +443,92 @@ static void rol(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    /* Next carry */
+    res = operand >> 1;
+    carry_out = operand & 0x01;
     clear_flag(&cpu->state, FLAG_CARRY);
-    if (operand & 0x80) {
-        set_flag(&cpu->state, FLAG_CARRY);
-    }
-    res = (operand << 1) | carry;
+    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
     eval_zero_flag(&cpu->state, res);
-    eval_neg_flag(&cpu->state, res);
+    clear_flag(&cpu->state, FLAG_NEGATIVE);
 
     if (instr->operation->mode == Accumulator) {
         cpu->state.reg_a = res;
     }
     else {
+        printf("%02x -> %02x\n", operand, res);
+        mem_set(cpu->mem, address, res);
+    }
+}
+static void rol(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t  res;
+    uint8_t  operand;
+    uint16_t address;
+    uint8_t  carry_in;
+    uint8_t  carry_out;
+
+    if (instr->operation->mode == Accumulator) {
+        operand = cpu->state.reg_a;
+    }
+    else {
+        address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    carry_in = cpu->state.flags & FLAG_CARRY ? 1 : 0;
+    carry_out = operand & 0x80;
+
+    res = (operand << 1) | carry_in;
+
+    /* Set flags */
+    clear_flag(&cpu->state, FLAG_CARRY);
+    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
+    eval_zero_flag(&cpu->state, res);
+    eval_neg_flag(&cpu->state, res);
+
+    /* Store result */
+    if (instr->operation->mode == Accumulator) {
+        cpu->state.reg_a = res;
+    }
+    else {
+        mem_set(cpu->mem, address, res);
+    }
+}
+
+static void ror(struct cpu_h *cpu,
+                struct instruction *instr)
+{
+    uint8_t  res;
+    uint8_t  operand;
+    uint16_t address;
+    uint8_t  carry_in;
+    uint8_t  carry_out;
+
+    if (instr->operation->mode == Accumulator) {
+        operand = cpu->state.reg_a;
+    }
+    else {
+        address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
+    }
+
+    carry_in = cpu->state.flags & FLAG_CARRY ? 0x80 : 0;
+    carry_out = operand & 0x01;
+
+    res = (operand >> 1) | carry_in;
+
+    /* Set flags */
+    clear_flag(&cpu->state, FLAG_CARRY);
+    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
+    eval_zero_flag(&cpu->state, res);
+    eval_neg_flag(&cpu->state, res);
+
+    /* Store result */
+    if (instr->operation->mode == Accumulator) {
+        cpu->state.reg_a = res;
+    }
+    else {
+        printf("%02x -> %02x\n", operand, res);
         mem_set(cpu->mem, address, res);
     }
 }
@@ -715,6 +788,12 @@ static int execute(struct cpu_h *cpu,
         break;
     case ROL:
         rol(cpu, instr);
+        break;
+    case LSR:
+        lsr(cpu, instr);
+        break;
+    case ROR:
+        ror(cpu, instr);
         break;
 
     /* Branch instructions */
