@@ -73,6 +73,8 @@ static void set_known_mem_values()
     _ram[0x4003] = 3;
     _ram[0x4004] = 4;
     _ram[0x4005] = 5;
+    _ram[0x4006] = 0xff;
+    _ram[0x4007] = 0x81;
     /* Known values at 0x0000 */
     _ram[0x0000] = 0x10;
     _ram[0x0001] = 0x20;
@@ -160,7 +162,7 @@ int check_test(struct test *test, struct cpu_state *state)
         }
     }
     if (test->check_ram_at) {
-        if (test->check_ram_val != _ram[test->check_ram_at]) {
+        if (test->check_ram_val != (uint8_t)_ram[test->check_ram_at]) {
             printf("%s: failed. Expected ram at %04x to be %02x "
                    "but was %02x\n",
                    test->name, test->check_ram_at,
@@ -1731,6 +1733,64 @@ int test_compare_y()
             },
             .check_flags = true,
             .init_reg_y = 0x10,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+int test_increase()
+{
+    struct test tests[] = {
+        {
+            .name = "Zero page",
+            .instructions = { 0xe6, 0x01 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x21,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+            .state = {
+                .flags = 0x00,
+            },
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0xf6, 0x00, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x21,
+            .init_reg_x = 0x01,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+            .state = {
+                .flags = 0x00,
+            },
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0xee, 0x06, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4006,
+            .check_ram_val = 0x00,
+            .state = {
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0xfe, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4007,
+            .check_ram_val = 0x82,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_x = 0x07,
+            .init_flags = 0,
         },
     };
 

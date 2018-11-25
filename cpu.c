@@ -432,6 +432,21 @@ static void ror(struct cpu_h *cpu,
     }
 }
 
+static void increase(struct cpu_h *cpu,
+                     struct instruction *instr)
+{
+    uint8_t  operand;
+    uint16_t address;
+    uint8_t  increased;
+
+    address = get_address_from_mode(cpu, instr);
+    operand = mem_get(cpu->mem, address);
+
+    cpu_instr_inc(operand, &increased, &cpu->state.flags);
+
+    mem_set(cpu->mem, address, increased);
+}
+
 static void bit(struct cpu_h *cpu,
                 struct instruction *instr)
 {
@@ -707,6 +722,9 @@ static int execute(struct cpu_h *cpu,
         break;
     case CPY:
         compare(cpu, instr, cpu->state.reg_y);
+        break;
+    case INC:
+        increase(cpu, instr);
         break;
 
     /* Branch instructions */
