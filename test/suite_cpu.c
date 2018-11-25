@@ -1533,3 +1533,47 @@ int test_status_instructions()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_compare_acc()
+{
+    struct test tests[] = {
+        /* Test flag settings with immediate */
+        /* Carry used for unsigned comparisons */
+        /* Negative used for signed comparisons */
+        {
+            .name = "Carry set, negative cleared on equal",
+            .instructions = { 0xc9, 0x30 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY|FLAG_ZERO,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_NEGATIVE,
+            .init_reg_a = 0x30,
+        },
+        {
+            .name = "Carry set, negative cleared on larger",
+            .instructions = { 0xc9, 0x30 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_NEGATIVE,
+            .init_reg_a = 0x40,
+        },
+        {
+            .name = "Carry clear, negative set on less",
+            .instructions = { 0xc9, 0x30 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_CARRY,
+            .init_reg_a = 0x10,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
