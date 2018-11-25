@@ -6,6 +6,7 @@
 
 #include "cpu_ops.h"
 #include "cpu.h"
+#include "cpu_instr.h"
 
 
 /* Needed for cycle calculation and edge behaviours */
@@ -99,51 +100,6 @@ static inline void clear_flag(struct cpu_state *state, uint8_t flag)
 static inline void set_flag(struct cpu_state *state, uint8_t flag)
 {
     state->flags |= flag;
-}
-
-static void eval_zero_flag(struct cpu_state *state,
-                           uint8_t val)
-{
-    clear_flag(state, FLAG_ZERO);
-    set_flag(state, val == 0 ? FLAG_ZERO : 0);
-}
-
-static void eval_neg_flag(struct cpu_state *state,
-                          uint8_t val)
-{
-    clear_flag(state, FLAG_NEGATIVE);
-    set_flag(state, val & 0x80 ? FLAG_NEGATIVE : 0);
-}
-
-/* Carry flags are set when the register cannot properly
- * represent the result as an unsigned value (no sign
- * bit required).*/
-/*
-static void eval_carry_flag(struct cpu_state *state,
-                            uint16_t val)
-{
-    clear_flag(state, FLAG_CARRY);
-    set_flag(state, val > 0xff ? FLAG_CARRY : 0);
-}
-*/
-
-/* Overflow flags get set when the register cannot properly
- * represent the result as a signed value (you overflowed 
- * into the sign bit).  */
-static void eval_overflow_flag(struct cpu_state *state,
-                               uint8_t op1, uint8_t op2,
-                               uint8_t res)
-{
-    /* Only care about sign bits */
-    op1 &= 0x80;
-    op2 &= 0x80;
-    res &= 0x80;
-
-    /* Check if sign change */
-    bool overflowed = op1 == op2 && op1 != res;
-
-    clear_flag(state, FLAG_OVERFLOW);
-    set_flag(state, overflowed ? FLAG_OVERFLOW : 0);
 }
 
 static void trace_register(int fd, char name,
@@ -278,19 +234,6 @@ static void interrupt_request(struct cpu_h *cpu)
     cpu->state.pc = handler_address;
 }
 
-static void transfer(struct cpu_h *cpu,
-                     uint8_t *to,
-                     uint8_t from)
-{
-    struct cpu_state *state = &cpu->state;
-
-    *to = from;
-
-    /* Set flags for new value */
-    eval_zero_flag(state, from);
-    eval_neg_flag(state, from);
-}
-
 static uint16_t get_address_from_mode(struct cpu_h *cpu,
                                       struct instruction *instr)
 {
@@ -340,29 +283,27 @@ static void load(struct cpu_h *cpu,
                  struct instruction *instr,
                  uint8_t *reg_out)
 {
-    uint8_t          reg;
-    struct cpu_state *state = &cpu->state;
+    uint8_t  operand;
+    uint16_t address;
 
     if (instr->operation->mode == Immediate) {
-        reg = instr->operands[0];
+        operand = instr->operands[0];
     }
     else {
-        uint16_t address = get_address_from_mode(cpu, instr);
-        reg = mem_get(cpu->mem, address);
+        address = get_address_from_mode(cpu, instr);
+        operand = mem_get(cpu->mem, address);
     }
 
-    /* Store new value */
-    *reg_out = reg;
-    /* Set flags for new value of reg */
-    eval_zero_flag(state, reg);
-    eval_neg_flag(state, reg);
+    cpu_instr_transfer(operand, reg_out, &cpu->state.flags);
 }
 
 static void store(struct cpu_h *cpu,
                   struct instruction *instr,
                   uint8_t reg)
 {
-    uint16_t address = get_address_from_mode(cpu, instr);
+    uint16_t address;
+
+    address = get_address_from_mode(cpu, instr);
     mem_set(cpu->mem, address, reg);
 }
 
@@ -380,20 +321,15 @@ static void and(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    /* Store the new value */
-    state->reg_a &= operand;
-    /* Set flags for new value of reg_a */
-    eval_zero_flag(state, state->reg_a);
-    eval_neg_flag(state, state->reg_a);
+    cpu_instr_and(&state->reg_a, operand, &state->flags);
 }
 
 static void asl(struct cpu_h *cpu,
                 struct instruction *instr)
 {
-    uint8_t res;
-    uint8_t operand;
+    uint8_t  operand;
     uint16_t address;
-    uint8_t  carry_out;
+    uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -403,28 +339,22 @@ static void asl(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    res = operand << 1;
-    carry_out = operand & 0x80;
-    clear_flag(&cpu->state, FLAG_CARRY);
-    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
-    eval_zero_flag(&cpu->state, res);
-    eval_neg_flag(&cpu->state, res);
+    cpu_instr_asl(operand, &shifted, &cpu->state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = res;
+        cpu->state.reg_a = shifted;
     }
     else {
-        mem_set(cpu->mem, address, res);
+        mem_set(cpu->mem, address, shifted);
     }
 }
 
 static void lsr(struct cpu_h *cpu,
                 struct instruction *instr)
 {
-    uint8_t res;
     uint8_t operand;
+    uint8_t shifted;
     uint16_t address;
-    uint8_t  carry_out;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -434,29 +364,22 @@ static void lsr(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    res = operand >> 1;
-    carry_out = operand & 0x01;
-    clear_flag(&cpu->state, FLAG_CARRY);
-    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
-    eval_zero_flag(&cpu->state, res);
-    clear_flag(&cpu->state, FLAG_NEGATIVE);
+    cpu_instr_lsr(operand, &shifted, &cpu->state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = res;
+        cpu->state.reg_a = shifted;
     }
     else {
-        printf("%02x -> %02x\n", operand, res);
-        mem_set(cpu->mem, address, res);
+        mem_set(cpu->mem, address, shifted);
     }
 }
+
 static void rol(struct cpu_h *cpu,
                 struct instruction *instr)
 {
-    uint8_t  res;
     uint8_t  operand;
     uint16_t address;
-    uint8_t  carry_in;
-    uint8_t  carry_out;
+    uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -466,34 +389,22 @@ static void rol(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    carry_in = cpu->state.flags & FLAG_CARRY ? 1 : 0;
-    carry_out = operand & 0x80;
+    cpu_instr_rol(operand, &shifted, &cpu->state.flags);
 
-    res = (operand << 1) | carry_in;
-
-    /* Set flags */
-    clear_flag(&cpu->state, FLAG_CARRY);
-    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
-    eval_zero_flag(&cpu->state, res);
-    eval_neg_flag(&cpu->state, res);
-
-    /* Store result */
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = res;
+        cpu->state.reg_a = shifted;
     }
     else {
-        mem_set(cpu->mem, address, res);
+        mem_set(cpu->mem, address, shifted);
     }
 }
 
 static void ror(struct cpu_h *cpu,
                 struct instruction *instr)
 {
-    uint8_t  res;
     uint8_t  operand;
     uint16_t address;
-    uint8_t  carry_in;
-    uint8_t  carry_out;
+    uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
         operand = cpu->state.reg_a;
@@ -503,24 +414,13 @@ static void ror(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    carry_in = cpu->state.flags & FLAG_CARRY ? 0x80 : 0;
-    carry_out = operand & 0x01;
+    cpu_instr_ror(operand, &shifted, &cpu->state.flags);
 
-    res = (operand >> 1) | carry_in;
-
-    /* Set flags */
-    clear_flag(&cpu->state, FLAG_CARRY);
-    set_flag(&cpu->state, carry_out ? FLAG_CARRY : 0);
-    eval_zero_flag(&cpu->state, res);
-    eval_neg_flag(&cpu->state, res);
-
-    /* Store result */
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = res;
+        cpu->state.reg_a = shifted;
     }
     else {
-        printf("%02x -> %02x\n", operand, res);
-        mem_set(cpu->mem, address, res);
+        mem_set(cpu->mem, address, shifted);
     }
 }
 
@@ -533,14 +433,7 @@ static void bit(struct cpu_h *cpu,
     address = get_address_from_mode(cpu, instr);
     operand = mem_get(cpu->mem, address);
 
-    clear_flag(&cpu->state, FLAG_NEGATIVE);
-    clear_flag(&cpu->state, FLAG_OVERFLOW);
-    clear_flag(&cpu->state, FLAG_ZERO);
-
-    set_flag(&cpu->state, operand & 0x80 ? FLAG_NEGATIVE : 0);
-    set_flag(&cpu->state, operand & 0x40 ? FLAG_OVERFLOW : 0);
-    set_flag(&cpu->state, (operand & cpu->state.reg_a) == 0 ?
-             FLAG_ZERO : 0);
+    cpu_instr_bit(operand, cpu->state.reg_a, &cpu->state.flags);
 }
 
 static void add(struct cpu_h *cpu,
@@ -548,8 +441,6 @@ static void add(struct cpu_h *cpu,
 {
     uint8_t          operand = 0;
     struct cpu_state *state = &cpu->state;
-    uint16_t         untrunced;
-    uint8_t          result;
     uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
 
     if (instr->operation->mode == Immediate) {
@@ -596,39 +487,8 @@ static void add(struct cpu_h *cpu,
         state->reg_a = ((a_hi << 4) | (a_lo & 0x0f)) & 0xff;
     }
     else {
-        operand += carry;
-        untrunced = state->reg_a + operand;
-        result = untrunced & 0xff;
-
-        clear_flag(state, FLAG_CARRY);
-        set_flag(state, untrunced > 0xff ? FLAG_CARRY : 0);
-        eval_overflow_flag(state, operand, state->reg_a, result);
-
-        /* Store the new value */
-        state->reg_a = result;
-        /* Set flags for new value of reg_a */
-        eval_zero_flag(state, state->reg_a);
-        eval_neg_flag(state, state->reg_a);
-    }
-}
-
-static void subtract_op(struct cpu_state *state,
-                        uint8_t borrow,
-                        uint8_t a, uint8_t b,
-                        uint8_t *result_out)
-{
-    uint8_t two_compl = ~b + borrow;
-    uint8_t result    = (a + two_compl) & 0xff;
-    uint8_t flags     = 0;
-
-    clear_flag(state, FLAG_CARRY|FLAG_ZERO|FLAG_NEGATIVE);
-    flags  = a >= b ? FLAG_CARRY : 0;
-    flags |= result == 0 ? FLAG_ZERO : 0;
-    flags |= result & 0x80 ? FLAG_NEGATIVE : 0;
-    set_flag(state, flags);
-
-    if (result_out) {
-        *result_out = result;
+        cpu_instr_add(state->reg_a, operand,
+                      &state->reg_a, &state->flags);
     }
 }
 
@@ -637,7 +497,6 @@ static void subtract(struct cpu_h *cpu,
 {
     uint8_t          operand = 0;
     struct cpu_state *state = &cpu->state;
-    uint8_t          borrow = state->flags & FLAG_CARRY ? 1 : 0;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
@@ -650,11 +509,8 @@ static void subtract(struct cpu_h *cpu,
     if (state->flags & FLAG_DECIMAL_MODE) 
         printf("Decimal mode not supported on sub\n");
     else {
-        uint8_t result;
-
-        subtract_op(state, borrow, state->reg_a, operand, &result);
-        eval_overflow_flag(state, operand, state->reg_a, result);
-        state->reg_a = result;
+        cpu_instr_sub(state->reg_a, operand,
+                      &state->reg_a, &state->flags);
     }
 }
 
@@ -673,7 +529,7 @@ static void compare(struct cpu_h *cpu,
         operand = mem_get(cpu->mem, address);
     }
 
-    subtract_op(state, 1, compare_to, operand, NULL);
+    cpu_instr_compare(compare_to, operand, &state->flags);
 }
 
 static void branch(struct cpu_h *cpu,
@@ -772,7 +628,9 @@ static int execute(struct cpu_h *cpu,
         stack_push(cpu, state->flags);
         break;
     case PLA:
-        transfer(cpu, &state->reg_a, stack_pop(cpu));
+        cpu_instr_transfer(stack_pop(cpu),
+                           &state->reg_a,
+                           &state->flags);
         break;
     case PLP:
         state->flags = stack_pop(cpu);
@@ -781,18 +639,26 @@ static int execute(struct cpu_h *cpu,
         state->sp = state->reg_x;
         break;
     case TSX:
-        transfer(cpu, &state->reg_x, state->sp);
+        cpu_instr_transfer(state->sp,
+                           &state->reg_x,
+                           &state->flags);
         break;
 
     /* Transfer instructions */
     case TAX:
-        transfer(cpu, &state->reg_x, state->reg_a);
+        cpu_instr_transfer(state->reg_a,
+                           &state->reg_x,
+                           &state->flags);
         break;
     case TXA:
-        transfer(cpu, &state->reg_a, state->reg_x);
+        cpu_instr_transfer(state->reg_x,
+                           &state->reg_a,
+                           &state->flags);
         break;
     case TYA:
-        transfer(cpu, &state->reg_a, state->reg_y);
+        cpu_instr_transfer(state->reg_y,
+                           &state->reg_a,
+                           &state->flags);
         break;
 
     /* Load instructions */
