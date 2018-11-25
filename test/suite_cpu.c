@@ -201,6 +201,7 @@ int run_tests(struct test *tests, int num)
     return success;
 }
 
+/* LDA */
 int test_load_a_instructions()
 {
     struct test tests[] = {
@@ -286,6 +287,7 @@ int test_load_a_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* LDX */
 int test_load_x_instructions()
 {
     struct test tests[] = {
@@ -341,6 +343,7 @@ int test_load_x_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* LDY */
 int test_load_y_instructions()
 {
     struct test tests[] = {
@@ -396,6 +399,7 @@ int test_load_y_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* STA */
 int test_store_a_instructions()
 {
     struct test tests[] = {
@@ -463,6 +467,18 @@ int test_store_a_instructions()
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+/* STX */
+int test_store_x_instructions()
+{
+    return 0;
+}
+
+/* STY */
+int test_store_y_instructions()
+{
+    return 0;
 }
 
 int test_stack_instructions()
@@ -726,11 +742,12 @@ int test_branch_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
-int test_logical_and_instructions()
+/* AND */
+int test_and_instructions()
 {
     struct test tests[] = {
         {
-            .name = "AND, immediate",
+            .name = "Immediate",
             .instructions = { 0x29, 0x80 },
             .num_steps = 1,
             .check_flags = true,
@@ -843,6 +860,13 @@ int test_logical_and_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* ORA */
+int test_or_instrucion()
+{
+    return 0;
+}
+
+/* ADC */
 int test_add_with_carry_instructions()
 {
     struct test tests[] = {
@@ -981,6 +1005,7 @@ int test_add_with_carry_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* SBC */
 int test_subract_with_carry_instructions()
 {
     struct test tests[] = {
@@ -1124,28 +1149,6 @@ int test_subract_with_carry_instructions()
         /* Test adds with FLAG_DECIMAL_MODE set. */
     };
 
-    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
-}
-
-int test_rts()
-{
-    struct test tests[] = {
-        /* Tests all different supported addressing modes */
-        {
-            .name = "Returns to address on stack",
-            .instructions = { 0xa9, 0x10, /* LDA #$10 */
-                              0x48,       /* PHA */
-                              0xa9, 0x20, /* LDA #$20 */
-                              0x48,       /* PHA */
-                              0x60,       /* RTS */
-                            },
-            .num_steps = 5,
-            .check_pc = true,
-            .state = {
-                .pc = 0x1020,
-            },
-        },
-    };
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
@@ -1536,6 +1539,7 @@ int test_status_instructions()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* CMP */
 int test_compare_acc()
 {
     struct test tests[] = {
@@ -1659,6 +1663,7 @@ int test_compare_acc()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* CPX */
 int test_compare_x()
 {
     struct test tests[] = {
@@ -1699,6 +1704,7 @@ int test_compare_x()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* CPY */
 int test_compare_y()
 {
     struct test tests[] = {
@@ -1739,6 +1745,7 @@ int test_compare_y()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* INC */
 int test_increase()
 {
     struct test tests[] = {
@@ -1797,6 +1804,7 @@ int test_increase()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* DEC */
 int test_decrease()
 {
     struct test tests[] = {
@@ -1853,4 +1861,56 @@ int test_decrease()
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+/* JMP */
+int test_jump()
+{
+    return 0;
+}
+
+/* JSR */
+int test_jump_to_subroutine()
+{
+    return 0;
+}
+
+/* RTS */
+int test_return_from_subroutine()
+{
+    struct test tests[] = {
+        {
+            .name = "Returns to address on stack",
+            .instructions = { 0xa9, 0x10, /* LDA #$10 */
+                              0x48,       /* PHA */
+                              0xa9, 0x20, /* LDA #$20 */
+                              0x48,       /* PHA */
+                              0x60,       /* RTS */
+                            },
+            .num_steps = 5,
+            .check_pc = true,
+            .state = {
+                .pc = 0x1020,
+            },
+        },
+    };
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+/* RTI */
+int test_return_from_interrupt()
+{
+    return 0;
+}
+
+/* DEX, DEY */
+int test_decrement_register()
+{
+    return 0;
+}
+
+/* INX, INY */
+int test_increment_register()
+{
+    return 0;
 }

@@ -668,6 +668,10 @@ static int execute(struct cpu_h *cpu,
                            &state->reg_a,
                            &state->flags);
         break;
+    case TAY:
+        cpu_instr_transfer(state->reg_a,
+                           &state->reg_y,
+                           &state->flags);
     case TYA:
         cpu_instr_transfer(state->reg_y,
                            &state->reg_a,
