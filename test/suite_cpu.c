@@ -1656,3 +1656,83 @@ int test_compare_acc()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_compare_x()
+{
+    struct test tests[] = {
+        {
+            .name = "Immediate",
+            .instructions = { 0xe0, 0x30 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY|FLAG_ZERO,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_NEGATIVE,
+            .init_reg_x = 0x30,
+        },
+        {
+            .name = "Zero page ",
+            .instructions = { 0xe4, 0x02 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_x = 0x10,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Absolute ",
+            .instructions = { 0xec, 0x01, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_reg_x = 0x10,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
+
+int test_compare_y()
+{
+    struct test tests[] = {
+        {
+            .name = "Immediate",
+            .instructions = { 0xc0, 0x30 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY|FLAG_ZERO,
+            },
+            .check_flags = true,
+            .init_flags = FLAG_NEGATIVE,
+            .init_reg_y = 0x30,
+        },
+        {
+            .name = "Zero page ",
+            .instructions = { 0xc4, 0x02 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_y = 0x10,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Absolute ",
+            .instructions = { 0xcc, 0x01, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_reg_y = 0x10,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}

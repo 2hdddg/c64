@@ -383,7 +383,7 @@ static const struct operation operations[256] = {
 { .mnem = LAX, .cycles = 0, .mode = Absolute_Y, },
 
 /* c0 - cf */
-{ .mnem = CPY, .cycles = 0, .mode = Implied,    },
+{ .mnem = CPY, .cycles = 0, .mode = Immediate,  },
 { .mnem = CMP, .cycles = 0, .mode = Indirect_X, },
 { .mnem = NOP, .cycles = 0, .mode = Undefined,  },
 { .mnem = DCP, .cycles = 0, .mode = Indirect_X, },
@@ -421,7 +421,7 @@ static const struct operation operations[256] = {
 { .mnem = DCP, .cycles = 0, .mode = Absolute_X, },
 
 /* e0 - ef */
-{ .mnem = CPX, .cycles = 0, .mode = Implied,    },
+{ .mnem = CPX, .cycles = 0, .mode = Immediate,  },
 { .mnem = SBC, .cycles = 0, .mode = Indirect_X, },
 { .mnem = NOP, .cycles = 0, .mode = Undefined,  },
 { .mnem = ISB, .cycles = 0, .mode = Indirect_X, },
