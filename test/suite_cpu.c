@@ -1573,6 +1573,85 @@ int test_compare_acc()
             .init_flags = FLAG_CARRY,
             .init_reg_a = 0x10,
         },
+        /* Test address modes */
+        {
+            .name = "Zero page ",
+            .instructions = { 0xc5, 0x02 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .check_flags = true,
+            .init_reg_a = 0x10,
+            .init_flags = FLAG_CARRY,
+        },
+        {
+            .name = "Zero page, X ",
+            .instructions = { 0xd5, 0x01 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_x = 0x03,
+            .check_flags = true,
+            .init_flags = FLAG_CARRY,
+            .init_reg_a = 0x10,
+        },
+        {
+            .name = "Absolute ",
+            .instructions = { 0xcd, 0x01, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .check_flags = true,
+            .init_reg_a = 0x10,
+        },
+        {
+            .name = "Absolute,X ",
+            .instructions = { 0xdd, 0x00, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .init_reg_x = 0x03,
+            .check_flags = true,
+            .init_reg_a = 0x10,
+        },
+        {
+            .name = "Absolute,Y ",
+            .instructions = { 0xd9, 0x00, 0x40 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY|FLAG_ZERO,
+            },
+            .init_reg_y = 0x04,
+            .check_flags = true,
+            .init_reg_a = 0x04,
+        },
+        {
+            .name = "Indirect, X ",
+            .instructions = { 0xc1, 0x10 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .init_reg_x = 0x02,
+            .check_flags = true,
+            .init_reg_a = 0x10,
+        },
+        {
+            .name = "Indirect, Y ",
+            .instructions = { 0xd1, 0x10 },
+            .num_steps = 1,
+            .state = {
+                .flags = FLAG_CARRY,
+            },
+            .init_reg_y = 0x03,
+            .check_flags = true,
+            .init_flags = FLAG_CARRY,
+            .init_reg_a = 0x10,
+        },
     };
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
