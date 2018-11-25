@@ -432,8 +432,9 @@ static void ror(struct cpu_h *cpu,
     }
 }
 
-static void increase(struct cpu_h *cpu,
-                     struct instruction *instr)
+static void inc_dec(struct cpu_h *cpu,
+                    struct instruction *instr,
+                    int8_t delta)
 {
     uint8_t  operand;
     uint16_t address;
@@ -442,7 +443,7 @@ static void increase(struct cpu_h *cpu,
     address = get_address_from_mode(cpu, instr);
     operand = mem_get(cpu->mem, address);
 
-    cpu_instr_inc(operand, &increased, &cpu->state.flags);
+    cpu_instr_inc_dec(operand, delta, &increased, &cpu->state.flags);
 
     mem_set(cpu->mem, address, increased);
 }
@@ -724,7 +725,10 @@ static int execute(struct cpu_h *cpu,
         compare(cpu, instr, cpu->state.reg_y);
         break;
     case INC:
-        increase(cpu, instr);
+        inc_dec(cpu, instr, 1);
+        break;
+    case DEC:
+        inc_dec(cpu, instr, -1);
         break;
 
     /* Branch instructions */

@@ -35,6 +35,7 @@ void cpu_instr_sub(uint8_t op1,
 void cpu_instr_compare(uint8_t op1,
                        uint8_t op2,
                        uint8_t *flags);
-void cpu_instr_inc(uint8_t operand,
-                   uint8_t *increased,
-                   uint8_t *flags);
+void cpu_instr_inc_dec(uint8_t operand,
+                       int8_t  delta,
+                       uint8_t *increased,
+                       uint8_t *flags);

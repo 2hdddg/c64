@@ -1796,3 +1796,61 @@ int test_increase()
 
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
+
+int test_decrease()
+{
+    struct test tests[] = {
+        {
+            .name = "Zero page",
+            .instructions = { 0xc6, 0x01 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x1f,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+            .state = {
+                .flags = 0x00,
+            },
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0xd6, 0x00, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x0001,
+            .check_ram_val = 0x1f,
+            .init_reg_x = 0x01,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+            .state = {
+                .flags = 0x00,
+            },
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0xce, 0x01, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4001,
+            .check_ram_val = 0x00,
+            .state = {
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0xde, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_ram_at = 0x4007,
+            .check_ram_val = 0x80,
+            .state = {
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_x = 0x07,
+            .init_flags = 0,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
+}
