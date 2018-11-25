@@ -68,6 +68,14 @@ static void stack_push_address(struct cpu_h *cpu,
     stack_push(cpu, addr >> 8);
 }
 
+static uint16_t stack_pop_address(struct cpu_h *cpu)
+{
+    uint8_t  lo = stack_pop(cpu);
+    uint8_t  hi = stack_pop(cpu);
+
+    return hi << 8 | lo;
+}
+
 static uint8_t get_page(uint16_t addr)
 {
     return addr / PAGE_SIZE;
@@ -595,17 +603,6 @@ static void jump(struct cpu_h *cpu,
     cpu->state.pc = address;
 }
 
-static void ret(struct cpu_h *cpu,
-                struct instruction *instr)
-{
-    uint16_t address;
-    uint8_t  lo = stack_pop(cpu);
-    uint8_t  hi = stack_pop(cpu);
-
-    address = make_address(hi, lo);
-    cpu->state.pc = address;
-}
-
 static int execute(struct cpu_h *cpu,
                    struct instruction *instr)
 {
@@ -751,7 +748,7 @@ static int execute(struct cpu_h *cpu,
         jump(cpu, instr);
         break;
     case RTS:
-        ret(cpu, instr);
+        cpu->state.pc = stack_pop_address(cpu);
         break;
 
     /* Status register instuctions */
