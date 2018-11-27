@@ -122,17 +122,6 @@ void cpu_instr_ror(uint8_t operand,
     *shifted = res;
 }
 
-void cpu_instr_inc(uint8_t operand,
-                   uint8_t *increased,
-                   uint8_t *flags)
-{
-    uint8_t res;
-
-    res = operand + 1;
-    eval_zero_and_neg(res, flags);
-    *increased = res;
-}
-
 void cpu_instr_inc_dec(uint8_t operand,
                        int8_t  delta,
                        uint8_t *increased,

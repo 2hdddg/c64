@@ -746,6 +746,14 @@ static int execute(struct cpu_h *cpu,
     case DEC:
         inc_dec(cpu, instr, -1);
         break;
+    case INX:
+        cpu_instr_inc_dec(cpu->state.reg_x, 1,
+                          &cpu->state.reg_x, &cpu->state.flags);
+        break;
+    case INY:
+        cpu_instr_inc_dec(cpu->state.reg_y, 1,
+                          &cpu->state.reg_y, &cpu->state.flags);
+        break;
 
     /* Branch instructions */
     case BEQ:

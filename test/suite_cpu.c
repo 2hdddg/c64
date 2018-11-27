@@ -1968,5 +1968,46 @@ int test_decrement_register()
 /* INX, INY */
 int test_increment_register()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "INX, wrap to zero and set zero flag",
+            .instructions = { 0xe8 },
+            .num_steps = 1,
+            .check_reg_x = true,
+            .check_flags = true,
+            .state = {
+                .reg_x = 0x00,
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = 0x00,
+            .init_reg_x = 0xff,
+        },
+        {
+            .name = "INX, increase to 0x80 and set neg flag",
+            .instructions = { 0xe8 },
+            .num_steps = 1,
+            .check_reg_x = true,
+            .check_flags = true,
+            .state = {
+                .reg_x = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = 0x00,
+            .init_reg_x = 0x7f,
+        },
+        {
+            .name = "INY, increase to 0x80 and set neg flag",
+            .instructions = { 0xc8 },
+            .num_steps = 1,
+            .check_reg_y = true,
+            .check_flags = true,
+            .state = {
+                .reg_y = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = 0x00,
+            .init_reg_y = 0x7f,
+        },
+    };
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
