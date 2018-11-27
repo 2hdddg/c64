@@ -472,13 +472,69 @@ int test_store_a_instructions()
 /* STX */
 int test_store_x_instructions()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "Zero page",
+            .instructions = { 0x86, 0x20, },
+            .num_steps = 1,
+            .check_ram_at = 0x20,
+            .check_ram_val = 0x01,
+            .init_reg_x = 0x01,
+        },
+        {
+            .name = "Zero page, Y",
+            .instructions = { 0x96, 0x20, },
+            .num_steps = 1,
+            .check_ram_at = 0x21,
+            .check_ram_val = 0x02,
+            .init_reg_x = 0x02,
+            .init_reg_y = 0x01,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x8e, 0x00, 0x50, },
+            .num_steps = 1,
+            .check_ram_at = 0x5000,
+            .check_ram_val = 0x01,
+            .init_reg_x = 0x01,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 /* STY */
 int test_store_y_instructions()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "Zero page",
+            .instructions = { 0x84, 0x20, },
+            .num_steps = 1,
+            .check_ram_at = 0x20,
+            .check_ram_val = 0x01,
+            .init_reg_y = 0x01,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x94, 0x20, },
+            .num_steps = 1,
+            .check_ram_at = 0x21,
+            .check_ram_val = 0x02,
+            .init_reg_x = 0x01,
+            .init_reg_y = 0x02,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x8c, 0x00, 0x50, },
+            .num_steps = 1,
+            .check_ram_at = 0x5000,
+            .check_ram_val = 0x01,
+            .init_reg_y = 0x01,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 int test_stack_instructions()

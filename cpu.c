@@ -699,6 +699,12 @@ static int execute(struct cpu_h *cpu,
     case STA:
         store(cpu, instr, cpu->state.reg_a);
         break;
+    case STX:
+        store(cpu, instr, cpu->state.reg_x);
+        break;
+    case STY:
+        store(cpu, instr, cpu->state.reg_y);
+        break;
 
     /* ALU instructions */
     case ADC:
@@ -844,7 +850,7 @@ static int get_num_operands(addressing_modes mode)
         return 1;
     case Undefined:
     default:
-        return -1;
+        return 0;
     }
 }
 

@@ -85,7 +85,6 @@
     MNEMONIC(SBX) \
     MNEMONIC(ISB) \
 
-
 enum mnemonics {
     FOREACH_MNEMONIC(GEN_ENUM)
     FOREACH_UNDOCUMENTED_MNEMONIC(GEN_ENUM)
@@ -301,7 +300,7 @@ static const struct operation opcodes[256] = {
 { .mnem = SHA, .cycles = 0, .mode = Indirect_Y, },
 { .mnem = STY, .cycles = 0, .mode = Zeropage_X, },
 { .mnem = STA, .cycles = 0, .mode = Zeropage_X, },
-{ .mnem = STX, .cycles = 0, .mode = Zeropage_X, },
+{ .mnem = STX, .cycles = 0, .mode = Zeropage_Y, },
 { .mnem = SAX, .cycles = 0, .mode = Zeropage_X, },
 
 { .mnem = TYA, .cycles = 0, .mode = Implied,    },
@@ -427,3 +426,4 @@ static const struct operation opcodes[256] = {
 { .mnem = INC, .cycles = 0, .mode = Absolute_X, },
 { .mnem = ISB, .cycles = 0, .mode = Absolute_X, },
 };
+
