@@ -857,7 +857,7 @@ static int fetch_and_decode(struct cpu_h *cpu,
     uint8_t      *operands = instr->operands;
 
     op_code = mem_get(mem, cpu->state.pc++);
-    instr->operation = &operations[op_code];
+    instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
     switch (num_operands) {
@@ -949,7 +949,7 @@ static void get_instruction(struct mem_h *mem,
     uint8_t *operands = instr->operands;
 
     op_code = mem_get(mem, address++);
-    instr->operation = &operations[op_code];
+    instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
     if (num_operands > 0) {

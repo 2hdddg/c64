@@ -122,7 +122,7 @@ struct operation {
     bool             undocumented;
 };
 
-static const struct operation operations[256] = {
+static const struct operation opcodes[256] = {
 /* 00 - 0f */
 { .mnem = BRK, .cycles = 7, .mode = Implied,    },
 { .mnem = ORA, .cycles = 6, .mode = Indirect_X, },
