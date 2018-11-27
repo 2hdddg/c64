@@ -29,5 +29,11 @@ int cpu_poweron(struct cpu_h *cpu);
 int cpu_step(struct cpu_h *cpu,
              struct cpu_state *state_out);
 
+/* For interactive use */
+void cpu_disassembly_at(struct cpu_h *cpu,
+                        int fd,
+                        uint16_t address,
+                        int num_instructions);
+
 /* For debug */
 int cpu_set_state(struct cpu_h *cpu, struct cpu_state *state);

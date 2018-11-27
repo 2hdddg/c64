@@ -136,19 +136,16 @@ static void trace_flags(int fd, uint8_t s)
     write(fd, trace, 8);
 }
 
-static void trace_execution(int fd, struct instruction *instr,
-                            struct cpu_state *s0,
-                            struct cpu_state *s1)
+static void trace_instruction(int fd,
+                              uint16_t address,
+                              struct instruction *instr,
+                              int pad)
 {
     char    trace[20];
-    uint8_t ops_max_len = 10;
     uint8_t ops_len = 0;
 
-    if (fd < 0)
-        return;
-
     sprintf(trace, "$%04x %s ",
-            s0->pc,
+            address,
             mnemonics_strings[instr->operation->mnem]);
     write(fd, trace, strlen(trace));
     trace[0] = 0;
@@ -211,11 +208,20 @@ static void trace_execution(int fd, struct instruction *instr,
     }
     ops_len = strlen(trace);
     write(fd, trace, ops_len);
-    while (ops_len < ops_max_len) {
+    while (ops_len < pad) {
         write(fd, " ", 1);
         ops_len++;
     }
+}
 
+static void trace_execution(int fd, struct instruction *instr,
+                            struct cpu_state *s0,
+                            struct cpu_state *s1)
+{
+    if (fd < 0)
+        return;
+
+    trace_instruction(fd, s0->pc, instr, 10);
     trace_flags(fd, s1->flags);
 
     trace_register(fd, 'A', s0->reg_a, s1->reg_a);
@@ -811,6 +817,37 @@ static int execute(struct cpu_h *cpu,
     return 0;
 }
 
+static int get_num_operands(addressing_modes mode)
+{
+    switch (mode) {
+    case Absolute:
+    case Absolute_Y:
+    case Absolute_X:
+        return 2;
+    case Accumulator:
+        return 0;
+    case Immediate:
+        return 1;
+    case Implied:
+        return 0;
+    case Indirect:
+        return 2;
+    case Indirect_X:
+    case Indirect_Y:
+        return 1;
+    case Relative:
+        return 1;
+    case Zeropage:
+    case Zeropage_X:
+    case Zeropage_Y:
+        return 1;
+        return 1;
+    case Undefined:
+    default:
+        return -1;
+    }
+}
+
 static int fetch_and_decode(struct cpu_h *cpu,
                             struct instruction *instr)
 {
@@ -900,6 +937,44 @@ int cpu_step(struct cpu_h *cpu,
     }
 
     return 0;
+}
+
+static void get_instruction(struct mem_h *mem,
+                            uint16_t address,
+                            struct instruction *instr,
+                            uint8_t *offset)
+{
+    uint8_t op_code;
+    int     num_operands;
+    uint8_t *operands = instr->operands;
+
+    op_code = mem_get(mem, address++);
+    instr->operation = &operations[op_code];
+
+    num_operands = get_num_operands(instr->operation->mode);
+    if (num_operands > 0) {
+        operands[0] = mem_get(mem, address++);
+    }
+    if (num_operands > 1) {
+        operands[1] = mem_get(mem, address++);
+    }
+    *offset = num_operands + 1;
+}
+
+void cpu_disassembly_at(struct cpu_h *cpu,
+                        int fd,
+                        uint16_t address,
+                        int num_instructions)
+{
+    struct instruction instr;
+    uint8_t offset;
+
+    while (num_instructions--) {
+        get_instruction(cpu->mem, address, &instr, &offset);
+        trace_instruction(fd, address, &instr, 0);
+        address += offset;
+        write(fd, "\n", 1);
+    }
 }
 
 void cpu_destroy(struct cpu_h *cpu)

@@ -115,37 +115,6 @@ typedef enum {
     Undefined,
 } addressing_modes;
 
-static int get_num_operands(addressing_modes mode)
-{
-    switch (mode) {
-    case Absolute:
-    case Absolute_Y:
-    case Absolute_X:
-        return 2;
-    case Accumulator:
-        return 0;
-    case Immediate:
-        return 1;
-    case Implied:
-        return 0;
-    case Indirect:
-        return 2;
-    case Indirect_X:
-    case Indirect_Y:
-        return 1;
-    case Relative:
-        return 1;
-    case Zeropage:
-    case Zeropage_X:
-    case Zeropage_Y:
-        return 1;
-        return 1;
-    case Undefined:
-    default:
-        return -1;
-    }
-}
-
 struct operation {
     enum mnemonics   mnem;
     addressing_modes mode;

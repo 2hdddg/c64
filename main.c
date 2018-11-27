@@ -7,32 +7,34 @@
 
 int main(int argc, char **argv)
 {
-    struct mem_h *mem_h = NULL;
-    struct cpu_h *cpu_h = NULL;
+    struct mem_h *mem = NULL;
+    struct cpu_h *cpu = NULL;
     struct cpu_state state = {
         .pc = 0x2000,
     };
 
-    if (mem_create(&mem_h) < 0) {
+    if (mem_create(&mem) < 0) {
         return -1;
     }
 
-    if (cpu_create(mem_h, STDOUT_FILENO, &cpu_h) < 0) {
-        mem_destroy(mem_h);
+    if (cpu_create(mem, STDOUT_FILENO, &cpu) < 0) {
+        mem_destroy(mem);
         return -1;
     }
 
     printf("Powering on..\n");
-    cpu_poweron(cpu_h);
+    cpu_poweron(cpu);
 
     int num = 12;
-    cpu_set_state(cpu_h, &state);
+    cpu_set_state(cpu, &state);
     while (num--) {
-        cpu_step(cpu_h, &state);
+        cpu_step(cpu, &state);
     }
 
-    cpu_destroy(cpu_h);
-    mem_destroy(mem_h);
+    cpu_disassembly_at(cpu, STDOUT_FILENO, 0xff48, 10);
+
+    cpu_destroy(cpu);
+    mem_destroy(mem);
 
     return 0;
 }
