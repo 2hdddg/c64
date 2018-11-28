@@ -1938,7 +1938,48 @@ int test_return_from_interrupt()
 /* DEX, DEY */
 int test_decrement_register()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "DEX, decrease to zero and set zero flag",
+            .instructions = { 0xca },
+            .num_steps = 1,
+            .check_reg_x = true,
+            .check_flags = true,
+            .state = {
+                .reg_x = 0x00,
+                .flags = FLAG_ZERO,
+            },
+            .init_flags = 0x00,
+            .init_reg_x = 0x01,
+        },
+        {
+            .name = "DEX, decrease to 0xff and set neg flag",
+            .instructions = { 0xca },
+            .num_steps = 1,
+            .check_reg_x = true,
+            .check_flags = true,
+            .state = {
+                .reg_x = 0xff,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = 0x00,
+            .init_reg_x = 0x00,
+        },
+        {
+            .name = "DEY, decrease to 0x80 and set neg flag",
+            .instructions = { 0x88 },
+            .num_steps = 1,
+            .check_reg_y = true,
+            .check_flags = true,
+            .state = {
+                .reg_y = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_flags = 0x00,
+            .init_reg_y = 0x81,
+        },
+    };
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 /* INX, INY */
