@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "mem.h"
 #include "cpu.h"
 
 #define RAM_SIZE 65536
@@ -11,10 +10,6 @@
 
 char _ram[RAM_SIZE];
 
-struct mem_h {
-};
-
-struct mem_h     *_mem;
 struct cpu_h     *_cpu;
 struct cpu_state _state;
 
@@ -37,31 +32,14 @@ struct test {
     uint8_t          init_reg_y;
 };
 
-/* Stubbed implementation of mem */
-
-int mem_create(struct mem_h **mem_out)
-{
-    *mem_out = (struct mem_h*)_ram;
-    return 0;
-}
-
-int mem_reset(struct mem_h *mem_h)
-{
-    return 0;
-}
-
-void mem_set(struct mem_h *mem, uint16_t addr, uint8_t val)
+void mem_set(void *m, uint16_t addr, uint8_t val)
 {
     _ram[addr] = val;
 }
 
-uint8_t mem_get(struct mem_h *mem, uint16_t addr)
+uint8_t mem_get(void *m, uint16_t addr)
 {
     return _ram[addr];
-}
-
-void mem_destroy(struct mem_h *mem)
-{
 }
 
 static void set_known_mem_values()
@@ -101,19 +79,17 @@ static void set_known_mem_values()
 
 int each_before()
 {
-    mem_create(&_mem);
     memset(_ram, 0, RAM_SIZE);
     memset(&_state, 0, sizeof(_state));
 
     set_known_mem_values();
 
-    return cpu_create(_mem, STDOUT_FILENO, &_cpu) == 0;
+    return cpu_create(STDOUT_FILENO, mem_get, mem_set, NULL, &_cpu) == 0;
 }
 
 int each_after()
 {
     cpu_destroy(_cpu);
-    mem_destroy(_mem);
     return 0;
 }
 

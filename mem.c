@@ -59,12 +59,12 @@ int mem_reset(struct mem_h *mem_h)
     return 0;
 }
 
-void mem_set(struct mem_h *mem_h, uint16_t addr, uint8_t val)
+void mem_set_cpu(struct mem_h *mem_h, uint16_t addr, uint8_t val)
 {
     mem_h->ram[addr] = val;
 }
 
-uint8_t mem_get(struct mem_h *mem_h, uint16_t addr)
+uint8_t mem_get_cpu(struct mem_h *mem_h, uint16_t addr)
 {
     /* TODO: Handle banking of ROM */
     return mem_h->ram[addr];

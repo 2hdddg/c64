@@ -17,13 +17,16 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if (cpu_create(mem, STDOUT_FILENO, &cpu) < 0) {
+    if (cpu_create(STDOUT_FILENO,
+                   mem_get_cpu, mem_set_cpu, mem,
+                   &cpu) < 0) {
         mem_destroy(mem);
         return -1;
     }
 
     printf("Powering on..\n");
     cpu_poweron(cpu);
+    mem_reset(mem);
 
     int num = 12;
     cpu_set_state(cpu, &state);
