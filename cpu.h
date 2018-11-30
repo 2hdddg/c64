@@ -20,13 +20,12 @@ struct cpu_state {
     uint8_t  sp;
 };
 
-typedef uint8_t (*cpu_mem_get)(void*, uint16_t addr);
-typedef void (*cpu_mem_set)(void*, uint16_t addr, uint8_t val);
+typedef uint8_t (*cpu_mem_get)(uint16_t addr);
+typedef void (*cpu_mem_set)(uint16_t addr, uint8_t val);
 
 int cpu_create(int execution_fd,
                cpu_mem_get mem_get,
                cpu_mem_set mem_set,
-               void *mem_handle,
                struct cpu_h **cpu);
 void cpu_destroy(struct cpu_h *cpu);
 

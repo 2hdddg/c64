@@ -19,7 +19,6 @@
 
 struct cpu_h {
     /* Memory access/io control */
-    void         *mem;
     cpu_mem_get  mem_get;
     cpu_mem_set  mem_set;
     /* Actual registers and status */
@@ -45,7 +44,7 @@ static void stack_push(struct cpu_h *cpu,
     uint16_t address;
 
     address = ADDR_STACK_START + cpu->state.sp;
-    cpu->mem_set(cpu->mem, address, val);
+    cpu->mem_set(address, val);
     cpu->state.sp--;
     cpu->stack_overflow |= cpu->state.sp == 0xff;
 }
@@ -58,7 +57,7 @@ static uint8_t stack_pop(struct cpu_h *cpu)
     cpu->state.sp++;
     cpu->stack_underflow |= cpu->state.sp == 0x00;
     address = ADDR_STACK_START + cpu->state.sp;
-    val = cpu->mem_get(cpu->mem, address);
+    val = cpu->mem_get(address);
 
     return val;
 }
@@ -96,8 +95,8 @@ static uint16_t make_address(uint8_t hi, uint8_t lo)
 static void read_address(struct cpu_h *cpu,
                          uint16_t addr, uint16_t *out)
 {
-    uint8_t lo = cpu->mem_get(cpu->mem, addr);
-    uint8_t hi = cpu->mem_get(cpu->mem, addr + 1);
+    uint8_t lo = cpu->mem_get(addr);
+    uint8_t hi = cpu->mem_get(addr + 1);
 
     *out = make_address(hi, lo);
 }
@@ -275,8 +274,8 @@ static uint16_t get_address_from_mode(struct cpu_h *cpu,
         break;
     case Indirect_Y:
         address = ops[0];
-        address = make_address(cpu->mem_get(cpu->mem, address + 1),
-                               cpu->mem_get(cpu->mem, address));
+        address = make_address(cpu->mem_get(address + 1),
+                               cpu->mem_get(address));
         address += state->reg_y;
         break;
     case Zeropage:
@@ -307,7 +306,7 @@ static void load(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_transfer(operand, reg_out, &cpu->state.flags);
@@ -320,7 +319,7 @@ static void store(struct cpu_h *cpu,
     uint16_t address;
 
     address = get_address_from_mode(cpu, instr);
-    cpu->mem_set(cpu->mem, address, reg);
+    cpu->mem_set(address, reg);
 }
 
 static void and(struct cpu_h *cpu,
@@ -335,7 +334,7 @@ static void and(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_and(&state->reg_a, operand, &state->flags);
@@ -353,7 +352,7 @@ static void or(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_or(&state->reg_a, operand, &state->flags);
@@ -371,7 +370,7 @@ static void asl(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_asl(operand, &shifted, &cpu->state.flags);
@@ -380,7 +379,7 @@ static void asl(struct cpu_h *cpu,
         cpu->state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(cpu->mem, address, shifted);
+        cpu->mem_set(address, shifted);
     }
 }
 
@@ -396,7 +395,7 @@ static void lsr(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_lsr(operand, &shifted, &cpu->state.flags);
@@ -405,7 +404,7 @@ static void lsr(struct cpu_h *cpu,
         cpu->state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(cpu->mem, address, shifted);
+        cpu->mem_set(address, shifted);
     }
 }
 
@@ -421,7 +420,7 @@ static void rol(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_rol(operand, &shifted, &cpu->state.flags);
@@ -430,7 +429,7 @@ static void rol(struct cpu_h *cpu,
         cpu->state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(cpu->mem, address, shifted);
+        cpu->mem_set(address, shifted);
     }
 }
 
@@ -446,7 +445,7 @@ static void ror(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_ror(operand, &shifted, &cpu->state.flags);
@@ -455,7 +454,7 @@ static void ror(struct cpu_h *cpu,
         cpu->state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(cpu->mem, address, shifted);
+        cpu->mem_set(address, shifted);
     }
 }
 
@@ -468,11 +467,11 @@ static void inc_dec(struct cpu_h *cpu,
     uint8_t  increased;
 
     address = get_address_from_mode(cpu, instr);
-    operand = cpu->mem_get(cpu->mem, address);
+    operand = cpu->mem_get(address);
 
     cpu_instr_inc_dec(operand, delta, &increased, &cpu->state.flags);
 
-    cpu->mem_set(cpu->mem, address, increased);
+    cpu->mem_set(address, increased);
 }
 
 static void bit(struct cpu_h *cpu,
@@ -482,7 +481,7 @@ static void bit(struct cpu_h *cpu,
     uint16_t address;
 
     address = get_address_from_mode(cpu, instr);
-    operand = cpu->mem_get(cpu->mem, address);
+    operand = cpu->mem_get(address);
 
     cpu_instr_bit(operand, cpu->state.reg_a, &cpu->state.flags);
 }
@@ -500,7 +499,7 @@ static void add(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     if (state->flags & FLAG_DECIMAL_MODE) {
@@ -556,7 +555,7 @@ static void subtract(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     if (state->flags & FLAG_DECIMAL_MODE) 
@@ -580,7 +579,7 @@ static void compare(struct cpu_h *cpu,
     }
     else {
         address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(cpu->mem, address);
+        operand = cpu->mem_get(address);
     }
 
     cpu_instr_compare(compare_to, operand, &state->flags);
@@ -631,14 +630,14 @@ static void jump(struct cpu_h *cpu,
     case Indirect:
         address = make_address(ops[1], ops[0]);
         page = get_page(address);
-        lo = cpu->mem_get(cpu->mem, address);
+        lo = cpu->mem_get(address);
         address++;
         if (page != get_page(address)) {
             /* Illegal case, indirect jump with vector starting
              * on the last byte of a page. */
             address = get_page_address(page);
         }
-        hi = cpu->mem_get(cpu->mem, address);
+        hi = cpu->mem_get(address);
         break;
     default:
         printf("Unhandled address mode\n");
@@ -904,7 +903,7 @@ static int fetch_and_decode(struct cpu_h *cpu,
     int          num_operands;
     uint8_t      *operands = instr->operands;
 
-    op_code = cpu->mem_get(cpu->mem, cpu->state.pc++);
+    op_code = cpu->mem_get(cpu->state.pc++);
     instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
@@ -912,11 +911,11 @@ static int fetch_and_decode(struct cpu_h *cpu,
     case 0:
         break;
     case 1:
-        operands[0] = cpu->mem_get(cpu->mem, cpu->state.pc++);
+        operands[0] = cpu->mem_get(cpu->state.pc++);
         break;
     case 2:
-        operands[0] = cpu->mem_get(cpu->mem, cpu->state.pc++);
-        operands[1] = cpu->mem_get(cpu->mem, cpu->state.pc++);
+        operands[0] = cpu->mem_get(cpu->state.pc++);
+        operands[1] = cpu->mem_get(cpu->state.pc++);
         break;
     default:
         printf("Unknown number of operands for mode: %d\n",
@@ -930,7 +929,6 @@ static int fetch_and_decode(struct cpu_h *cpu,
 int cpu_create(int disassemble_fd,
                cpu_mem_get mem_get,
                cpu_mem_set mem_set,
-               void *mem,
                struct cpu_h **cpu_out)
 {
     struct cpu_h *cpu;
@@ -945,7 +943,6 @@ int cpu_create(int disassemble_fd,
     /* Initialize self */
     cpu->mem_get = mem_get;
     cpu->mem_set = mem_set;
-    cpu->mem = mem;
     cpu->disassemble_fd = disassemble_fd;
 
     *cpu_out = cpu;
@@ -998,15 +995,15 @@ static void get_instruction(struct cpu_h *cpu,
     int     num_operands;
     uint8_t *operands = instr->operands;
 
-    op_code = cpu->mem_get(cpu->mem, address++);
+    op_code = cpu->mem_get(address++);
     instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
     if (num_operands > 0) {
-        operands[0] = cpu->mem_get(cpu->mem, address++);
+        operands[0] = cpu->mem_get(address++);
     }
     if (num_operands > 1) {
-        operands[1] = cpu->mem_get(cpu->mem, address++);
+        operands[1] = cpu->mem_get(address++);
     }
     *offset = num_operands + 1;
 }

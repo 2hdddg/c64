@@ -14,12 +14,12 @@ char _ram[RAM_SIZE];
 struct cpu_h     *_cpu;
 struct cpu_state _state;
 
-void mem_set(void *m, uint16_t addr, uint8_t val)
+void mem_set(uint16_t addr, uint8_t val)
 {
     _ram[addr] = val;
 }
 
-uint8_t mem_get(void *m, uint16_t addr)
+uint8_t mem_get(uint16_t addr)
 {
     return _ram[addr];
 }
@@ -28,7 +28,7 @@ int each_before()
 {
     memset(_ram, 0, RAM_SIZE);
     memset(&_state, 0, sizeof(_state));
-    return cpu_create(STDOUT_FILENO, mem_get, mem_set, NULL, &_cpu) == 0;
+    return cpu_create(STDOUT_FILENO, mem_get, mem_set, &_cpu) == 0;
 }
 
 int each_after()
