@@ -11,7 +11,6 @@
 
 char _ram[RAM_SIZE];
 
-struct cpu_h     *_cpu;
 struct cpu_state _state;
 
 void mem_set(uint16_t addr, uint8_t val)
@@ -28,12 +27,8 @@ int each_before()
 {
     memset(_ram, 0, RAM_SIZE);
     memset(&_state, 0, sizeof(_state));
-    return cpu_create(STDOUT_FILENO, mem_get, mem_set, &_cpu) == 0;
-}
+    cpu_init(mem_get, mem_set, STDOUT_FILENO);
 
-int each_after()
-{
-    cpu_destroy(_cpu);
     return 0;
 }
 
@@ -75,9 +70,9 @@ int test_add_with_carry_big_numbers()
             _ram[0x5101] = 0x00;
             _state.pc = CODE;
             _state.sp = 0xff;
-            cpu_set_state(_cpu, &_state);
+            cpu_set_state(&_state);
             for (int s = 0; s < num_program_steps; s++) {
-                cpu_step(_cpu, NULL);
+                cpu_step(NULL);
             }
             uint16_t res = (_ram[0x5100] & 0xff) | (_ram[0x5101] << 8);
             uint16_t real_res = (op1 + op2) & 0xffff;
@@ -135,9 +130,9 @@ int test_subtract_with_carry_big_positive_numbers()
             _ram[0x5101] = 0x00;
             _state.pc = CODE;
             _state.sp = 0xff;
-            cpu_set_state(_cpu, &_state);
+            cpu_set_state(&_state);
             for (int s = 0; s < num_program_steps; s++) {
-                cpu_step(_cpu, NULL);
+                cpu_step(NULL);
             }
             uint16_t res = (_ram[0x5100] & 0xff) | (_ram[0x5101] << 8);
             uint16_t real_res = (op1 - op2);
@@ -179,9 +174,9 @@ int test_double_integer_of_four_bytes()
     _state.pc = CODE;
     _state.sp = 0xff;
     _state.flags = 0x00;
-    cpu_set_state(_cpu, &_state);
+    cpu_set_state(&_state);
     for (int s = 0; s < num_program_steps; s++) {
-        cpu_step(_cpu, NULL);
+        cpu_step(NULL);
     }
 
     doubled  = (uint8_t)_ram[0x5003] << 24;
@@ -220,9 +215,9 @@ int test_half_integer_of_four_bytes()
     _state.pc = CODE;
     _state.sp = 0xff;
     _state.flags = 0x00;
-    cpu_set_state(_cpu, &_state);
+    cpu_set_state(&_state);
     for (int s = 0; s < num_program_steps; s++) {
-        cpu_step(_cpu, NULL);
+        cpu_step(NULL);
     }
 
     halfed  = (uint8_t)_ram[0x5003] << 24;

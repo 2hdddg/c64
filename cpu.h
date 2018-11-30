@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-struct cpu_h;
 
 /* Processor status flags */
 #define FLAG_CARRY        0x01
@@ -23,21 +22,17 @@ struct cpu_state {
 typedef uint8_t (*cpu_mem_get)(uint16_t addr);
 typedef void (*cpu_mem_set)(uint16_t addr, uint8_t val);
 
-int cpu_create(int execution_fd,
-               cpu_mem_get mem_get,
-               cpu_mem_set mem_set,
-               struct cpu_h **cpu);
-void cpu_destroy(struct cpu_h *cpu);
+void cpu_init(cpu_mem_get mem_get,
+              cpu_mem_set mem_set,
+              int trace_fd);
 
-int cpu_poweron(struct cpu_h *cpu);
-int cpu_step(struct cpu_h *cpu,
-             struct cpu_state *state_out);
+void cpu_poweron();
+void cpu_step(struct cpu_state *state_out);
 
 /* For interactive use */
-void cpu_disassembly_at(struct cpu_h *cpu,
-                        int fd,
+void cpu_disassembly_at(int fd,
                         uint16_t address,
                         int num_instructions);
 
 /* For debug */
-int cpu_set_state(struct cpu_h *cpu, struct cpu_state *state);
+void cpu_set_state(struct cpu_state *state);

@@ -16,63 +16,60 @@
 #define ADDR_STACK_START    0x0100
 #define ADDR_IRQ_VECTOR     0xfffe
 
+/* Memory access */
+cpu_mem_get _mem_get;
+cpu_mem_set _mem_set;
 
-struct cpu_h {
-    /* Memory access/io control */
-    cpu_mem_get  mem_get;
-    cpu_mem_set  mem_set;
-    /* Actual registers and status */
-    struct cpu_state state;
+/* Actual registers and status */
+struct cpu_state _state;
 
-    bool             irq_pending;
+/* Interrupt handling */
+bool             _irq_pending;
 
-    /* For debugging */
-    int              disassemble_fd;
-    bool             stack_overflow;
-    bool             stack_underflow;
-    struct cpu_state state_before;
-};
+/* For debugging */
+int              _trace_fd;
+bool             _stack_overflow;
+bool             _stack_underflow;
+struct cpu_state _state_before;
 
 struct instruction {
     const struct operation *operation;
     uint8_t                operands[2];
 };
 
-static void stack_push(struct cpu_h *cpu,
-                       uint8_t val)
+static void stack_push(uint8_t val)
 {
     uint16_t address;
 
-    address = ADDR_STACK_START + cpu->state.sp;
-    cpu->mem_set(address, val);
-    cpu->state.sp--;
-    cpu->stack_overflow |= cpu->state.sp == 0xff;
+    address = ADDR_STACK_START + _state.sp;
+    _mem_set(address, val);
+    _state.sp--;
+    _stack_overflow |= _state.sp == 0xff;
 }
 
-static uint8_t stack_pop(struct cpu_h *cpu)
+static uint8_t stack_pop()
 {
     uint16_t address;
     uint8_t  val;
 
-    cpu->state.sp++;
-    cpu->stack_underflow |= cpu->state.sp == 0x00;
-    address = ADDR_STACK_START + cpu->state.sp;
-    val = cpu->mem_get(address);
+    _state.sp++;
+    _stack_underflow |= _state.sp == 0x00;
+    address = ADDR_STACK_START + _state.sp;
+    val = _mem_get(address);
 
     return val;
 }
 
-static void stack_push_address(struct cpu_h *cpu,
-                               uint16_t addr)
+static void stack_push_address(uint16_t addr)
 {
-    stack_push(cpu, addr & 0xff);
-    stack_push(cpu, addr >> 8);
+    stack_push(addr & 0xff);
+    stack_push(addr >> 8);
 }
 
-static uint16_t stack_pop_address(struct cpu_h *cpu)
+static uint16_t stack_pop_address()
 {
-    uint8_t  lo = stack_pop(cpu);
-    uint8_t  hi = stack_pop(cpu);
+    uint8_t  lo = stack_pop();
+    uint8_t  hi = stack_pop();
 
     return hi << 8 | lo;
 }
@@ -92,11 +89,10 @@ static uint16_t make_address(uint8_t hi, uint8_t lo)
     return hi << 8 | lo;
 }
 
-static void read_address(struct cpu_h *cpu,
-                         uint16_t addr, uint16_t *out)
+static void read_address(uint16_t addr, uint16_t *out)
 {
-    uint8_t lo = cpu->mem_get(addr);
-    uint8_t hi = cpu->mem_get(addr + 1);
+    uint8_t lo = _mem_get(addr);
+    uint8_t hi = _mem_get(addr + 1);
 
     *out = make_address(hi, lo);
 }
@@ -233,28 +229,27 @@ static void trace_execution(int fd, struct instruction *instr,
     write(fd, "\n", 1);
 }
 
-static void interrupt_request(struct cpu_h *cpu)
+static void interrupt_request()
 {
     uint16_t handler_address;
 
     /* Push program counter and status register on stack */
-    stack_push_address(cpu, cpu->state.pc);
-    stack_push(cpu, cpu->state.flags);
+    stack_push_address(_state.pc);
+    stack_push(_state.flags);
 
-    clear_flag(&cpu->state, FLAG_BRK);
+    clear_flag(&_state, FLAG_BRK);
 
     /* Retrieve handler at cpu hardwired address */
-    read_address(cpu, ADDR_IRQ_VECTOR, &handler_address);
+    read_address(ADDR_IRQ_VECTOR, &handler_address);
     /* Point program counter to IRQ handler routine */
-    cpu->state.pc = handler_address;
+    _state.pc = handler_address;
 }
 
-static uint16_t get_address_from_mode(struct cpu_h *cpu,
-                                      struct instruction *instr)
+static uint16_t get_address_from_mode(struct instruction *instr)
 {
     uint16_t         address;
     uint8_t          *ops = instr->operands;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
 
     switch (instr->operation->mode) {
     case Absolute:
@@ -274,8 +269,8 @@ static uint16_t get_address_from_mode(struct cpu_h *cpu,
         break;
     case Indirect_Y:
         address = ops[0];
-        address = make_address(cpu->mem_get(address + 1),
-                               cpu->mem_get(address));
+        address = make_address(_mem_get(address + 1),
+                               _mem_get(address));
         address += state->reg_y;
         break;
     case Zeropage:
@@ -294,8 +289,7 @@ static uint16_t get_address_from_mode(struct cpu_h *cpu,
     return address;
 }
 
-static void load(struct cpu_h *cpu,
-                 struct instruction *instr,
+static void load(struct instruction *instr,
                  uint8_t *reg_out)
 {
     uint8_t  operand;
@@ -305,110 +299,105 @@ static void load(struct cpu_h *cpu,
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
-    cpu_instr_transfer(operand, reg_out, &cpu->state.flags);
+    cpu_instr_transfer(operand, reg_out, &_state.flags);
 }
 
-static void store(struct cpu_h *cpu,
-                  struct instruction *instr,
+static void store(struct instruction *instr,
                   uint8_t reg)
 {
     uint16_t address;
 
-    address = get_address_from_mode(cpu, instr);
-    cpu->mem_set(address, reg);
+    address = get_address_from_mode(instr);
+    _mem_set(address, reg);
 }
 
-static void and(struct cpu_h *cpu,
-                struct instruction *instr)
+static void and(struct instruction *instr)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
     uint16_t         address;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
     cpu_instr_and(&state->reg_a, operand, &state->flags);
 }
 
-static void or(struct cpu_h *cpu,
-               struct instruction *instr)
+static void or(struct instruction *instr)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
     uint16_t         address;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
     cpu_instr_or(&state->reg_a, operand, &state->flags);
 }
 
-static void asl(struct cpu_h *cpu,
-                struct instruction *instr)
+static void asl(struct instruction *instr)
 {
     uint8_t  operand;
     uint16_t address;
     uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
-        operand = cpu->state.reg_a;
+        operand = _state.reg_a;
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
-    cpu_instr_asl(operand, &shifted, &cpu->state.flags);
+    cpu_instr_asl(operand, &shifted, &_state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = shifted;
+        _state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(address, shifted);
+        _mem_set(address, shifted);
     }
 }
 
-static void lsr(struct cpu_h *cpu,
-                struct instruction *instr)
+static void lsr( struct instruction *instr)
 {
     uint8_t operand;
     uint8_t shifted;
     uint16_t address;
 
     if (instr->operation->mode == Accumulator) {
-        operand = cpu->state.reg_a;
+        operand = _state.reg_a;
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
-    cpu_instr_lsr(operand, &shifted, &cpu->state.flags);
+    cpu_instr_lsr(operand, &shifted, &_state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = shifted;
+        _state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(address, shifted);
+        _mem_set(address, shifted);
     }
 }
 
-static void rol(struct cpu_h *cpu,
+static void rol(
                 struct instruction *instr)
 {
     uint8_t  operand;
@@ -416,81 +405,77 @@ static void rol(struct cpu_h *cpu,
     uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
-        operand = cpu->state.reg_a;
+        operand = _state.reg_a;
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
-    cpu_instr_rol(operand, &shifted, &cpu->state.flags);
+    cpu_instr_rol(operand, &shifted, &_state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = shifted;
+        _state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(address, shifted);
+        _mem_set(address, shifted);
     }
 }
 
-static void ror(struct cpu_h *cpu,
-                struct instruction *instr)
+static void ror(struct instruction *instr)
 {
     uint8_t  operand;
     uint16_t address;
     uint8_t  shifted;
 
     if (instr->operation->mode == Accumulator) {
-        operand = cpu->state.reg_a;
+        operand = _state.reg_a;
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
-    cpu_instr_ror(operand, &shifted, &cpu->state.flags);
+    cpu_instr_ror(operand, &shifted, &_state.flags);
 
     if (instr->operation->mode == Accumulator) {
-        cpu->state.reg_a = shifted;
+        _state.reg_a = shifted;
     }
     else {
-        cpu->mem_set(address, shifted);
+        _mem_set(address, shifted);
     }
 }
 
-static void inc_dec(struct cpu_h *cpu,
-                    struct instruction *instr,
+static void inc_dec(struct instruction *instr,
                     int8_t delta)
 {
     uint8_t  operand;
     uint16_t address;
     uint8_t  increased;
 
-    address = get_address_from_mode(cpu, instr);
-    operand = cpu->mem_get(address);
+    address = get_address_from_mode(instr);
+    operand = _mem_get(address);
 
-    cpu_instr_inc_dec(operand, delta, &increased, &cpu->state.flags);
+    cpu_instr_inc_dec(operand, delta, &increased, &_state.flags);
 
-    cpu->mem_set(address, increased);
+    _mem_set(address, increased);
 }
 
-static void bit(struct cpu_h *cpu,
-                struct instruction *instr)
+static void bit(struct instruction *instr)
 {
     uint8_t  operand;
     uint16_t address;
 
-    address = get_address_from_mode(cpu, instr);
-    operand = cpu->mem_get(address);
+    address = get_address_from_mode(instr);
+    operand = _mem_get(address);
 
-    cpu_instr_bit(operand, cpu->state.reg_a, &cpu->state.flags);
+    cpu_instr_bit(operand, _state.reg_a, &_state.flags);
 }
 
-static void add(struct cpu_h *cpu,
-                struct instruction *instr)
+static void add(struct instruction *instr)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
     uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
     uint16_t         address;
 
@@ -498,8 +483,8 @@ static void add(struct cpu_h *cpu,
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
     if (state->flags & FLAG_DECIMAL_MODE) {
@@ -543,19 +528,18 @@ static void add(struct cpu_h *cpu,
     }
 }
 
-static void subtract(struct cpu_h *cpu,
-                     struct instruction *instr)
+static void subtract(struct instruction *instr)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
     uint16_t         address;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
     if (state->flags & FLAG_DECIMAL_MODE) 
@@ -566,27 +550,25 @@ static void subtract(struct cpu_h *cpu,
     }
 }
 
-static void compare(struct cpu_h *cpu,
-                   struct instruction *instr,
+static void compare(struct instruction *instr,
                    uint8_t compare_to)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
     uint16_t         address;
 
     if (instr->operation->mode == Immediate) {
         operand = instr->operands[0];
     }
     else {
-        address = get_address_from_mode(cpu, instr);
-        operand = cpu->mem_get(address);
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
     }
 
     cpu_instr_compare(compare_to, operand, &state->flags);
 }
 
-static void branch(struct cpu_h *cpu,
-                   struct instruction *instr,
+static void branch(struct instruction *instr,
                    int do_branch)
 {
     uint8_t offset;
@@ -603,10 +585,10 @@ static void branch(struct cpu_h *cpu,
         /* Jumps relative to current address */
         offset = instr->operands[0];
         if (offset & 0x80) {
-            cpu->state.pc -= 0x100 - offset;
+            _state.pc -= 0x100 - offset;
         }
         else {
-            cpu->state.pc += offset;
+            _state.pc += offset;
         }
         break;
     default:
@@ -615,8 +597,7 @@ static void branch(struct cpu_h *cpu,
     }
 }
 
-static void jump(struct cpu_h *cpu,
-                 struct instruction *instr)
+static void jump(struct instruction *instr)
 {
     uint16_t address;
     uint8_t  lo, hi, page;
@@ -630,14 +611,14 @@ static void jump(struct cpu_h *cpu,
     case Indirect:
         address = make_address(ops[1], ops[0]);
         page = get_page(address);
-        lo = cpu->mem_get(address);
+        lo = _mem_get(address);
         address++;
         if (page != get_page(address)) {
             /* Illegal case, indirect jump with vector starting
              * on the last byte of a page. */
             address = get_page_address(page);
         }
-        hi = cpu->mem_get(address);
+        hi = _mem_get(address);
         break;
     default:
         printf("Unhandled address mode\n");
@@ -645,13 +626,12 @@ static void jump(struct cpu_h *cpu,
     }
 
     address = make_address(hi, lo);
-    cpu->state.pc = address;
+    _state.pc = address;
 }
 
-static int execute(struct cpu_h *cpu,
-                   struct instruction *instr)
+static int execute(struct instruction *instr)
 {
-    struct cpu_state *state = &cpu->state;
+    struct cpu_state *state = &_state;
 
     switch (instr->operation->mnem) {
     case BRK:
@@ -659,23 +639,23 @@ static int execute(struct cpu_h *cpu,
         set_flag(state, FLAG_BRK);
         /* Exception on how program counter is counted */
         state->pc++;
-        cpu->irq_pending = true;
+        _irq_pending = true;
         break;
 
     /* Stack instructions */
     case PHA:
-        stack_push(cpu, state->reg_a);
+        stack_push(state->reg_a);
         break;
     case PHP:
-        stack_push(cpu, state->flags);
+        stack_push(state->flags);
         break;
     case PLA:
-        cpu_instr_transfer(stack_pop(cpu),
+        cpu_instr_transfer(stack_pop(),
                            &state->reg_a,
                            &state->flags);
         break;
     case PLP:
-        state->flags = stack_pop(cpu);
+        state->flags = stack_pop();
         break;
     case TXS:
         state->sp = state->reg_x;
@@ -709,149 +689,141 @@ static int execute(struct cpu_h *cpu,
 
     /* Load instructions */
     case LDA:
-        load(cpu, instr, &cpu->state.reg_a);
+        load(instr, &_state.reg_a);
         break;
     case LDX:
-        load(cpu, instr, &cpu->state.reg_x);
+        load(instr, &_state.reg_x);
         break;
     case LDY:
-        load(cpu, instr, &cpu->state.reg_y);
+        load(instr, &_state.reg_y);
         break;
 
     /* Store instructions */
     case STA:
-        store(cpu, instr, cpu->state.reg_a);
+        store(instr, _state.reg_a);
         break;
     case STX:
-        store(cpu, instr, cpu->state.reg_x);
+        store(instr, _state.reg_x);
         break;
     case STY:
-        store(cpu, instr, cpu->state.reg_y);
+        store(instr, _state.reg_y);
         break;
 
     /* ALU instructions */
     case ADC:
-        add(cpu, instr);
+        add(instr);
         break;
     case SBC:
-        subtract(cpu, instr);
+        subtract(instr);
         break;
     case AND:
-        and(cpu, instr);
+        and(instr);
         break;
     case ORA:
-        or(cpu, instr);
+        or(instr);
         break;
     case ASL:
-        asl(cpu, instr);
+        asl(instr);
         break;
     case ROL:
-        rol(cpu, instr);
+        rol(instr);
         break;
     case LSR:
-        lsr(cpu, instr);
+        lsr(instr);
         break;
     case ROR:
-        ror(cpu, instr);
+        ror(instr);
         break;
     case BIT:
-        bit(cpu, instr);
+        bit(instr);
         break;
     case CMP:
-        compare(cpu, instr, cpu->state.reg_a);
+        compare(instr, _state.reg_a);
         break;
     case CPX:
-        compare(cpu, instr, cpu->state.reg_x);
+        compare(instr, _state.reg_x);
         break;
     case CPY:
-        compare(cpu, instr, cpu->state.reg_y);
+        compare(instr, _state.reg_y);
         break;
     case INC:
-        inc_dec(cpu, instr, 1);
+        inc_dec(instr, 1);
         break;
     case DEC:
-        inc_dec(cpu, instr, -1);
+        inc_dec(instr, -1);
         break;
     case INX:
-        cpu_instr_inc_dec(cpu->state.reg_x, 1,
-                          &cpu->state.reg_x, &cpu->state.flags);
+        cpu_instr_inc_dec(_state.reg_x, 1,
+                          &_state.reg_x, &_state.flags);
         break;
     case INY:
-        cpu_instr_inc_dec(cpu->state.reg_y, 1,
-                          &cpu->state.reg_y, &cpu->state.flags);
+        cpu_instr_inc_dec(_state.reg_y, 1,
+                          &_state.reg_y, &_state.flags);
         break;
     case DEX:
-        cpu_instr_inc_dec(cpu->state.reg_x, -1,
-                          &cpu->state.reg_x, &cpu->state.flags);
+        cpu_instr_inc_dec(_state.reg_x, -1,
+                          &_state.reg_x, &_state.flags);
         break;
     case DEY:
-        cpu_instr_inc_dec(cpu->state.reg_y, -1,
-                          &cpu->state.reg_y, &cpu->state.flags);
+        cpu_instr_inc_dec(_state.reg_y, -1,
+                          &_state.reg_y, &_state.flags);
         break;
 
     /* Branch instructions */
     case BEQ:
-        branch(cpu, instr,
-               cpu->state.flags & FLAG_ZERO);
+        branch(instr, _state.flags & FLAG_ZERO);
         break;
     case BNE:
-        branch(cpu, instr,
-               (cpu->state.flags & FLAG_ZERO) == 0);
+        branch(instr, (_state.flags & FLAG_ZERO) == 0);
         break;
     case BPL:
-        branch(cpu, instr,
-               (cpu->state.flags & FLAG_NEGATIVE) == 0);
+        branch(instr, (_state.flags & FLAG_NEGATIVE) == 0);
         break;
     case BMI:
-        branch(cpu, instr,
-               cpu->state.flags & FLAG_NEGATIVE);
+        branch(instr, _state.flags & FLAG_NEGATIVE);
         break;
     case BVC:
-        branch(cpu, instr,
-               (cpu->state.flags & FLAG_OVERFLOW) == 0);
+        branch(instr, (_state.flags & FLAG_OVERFLOW) == 0);
         break;
     case BVS:
-        branch(cpu, instr,
-               cpu->state.flags & FLAG_OVERFLOW);
+        branch(instr, _state.flags & FLAG_OVERFLOW);
         break;
     case BCC:
-        branch(cpu, instr,
-               (cpu->state.flags & FLAG_CARRY) == 0);
+        branch(instr, (_state.flags & FLAG_CARRY) == 0);
         break;
     case BCS:
-        branch(cpu, instr,
-               cpu->state.flags & FLAG_CARRY);
+        branch(instr, _state.flags & FLAG_CARRY);
         break;
 
     /* Jump instructions */
     case JMP:
-        jump(cpu, instr);
+        jump(instr);
         break;
     case RTS:
-        cpu->state.pc = stack_pop_address(cpu);
+        _state.pc = stack_pop_address();
         break;
 
     /* Status register instuctions */
     case CLC:
-        clear_flag(&cpu->state, FLAG_CARRY);
+        clear_flag(&_state, FLAG_CARRY);
         break;
     case SEC:
-        set_flag(&cpu->state, FLAG_CARRY);
+        set_flag(&_state, FLAG_CARRY);
         break;
     case CLI:
-        clear_flag(&cpu->state, FLAG_IRQ_DISABLE);
+        clear_flag(&_state, FLAG_IRQ_DISABLE);
         break;
     case SEI:
-        set_flag(&cpu->state, FLAG_IRQ_DISABLE);
+        set_flag(&_state, FLAG_IRQ_DISABLE);
         break;
     case SED:
-        set_flag(&cpu->state, FLAG_DECIMAL_MODE);
+        set_flag(&_state, FLAG_DECIMAL_MODE);
         break;
     case CLD:
-        clear_flag(&cpu->state, FLAG_DECIMAL_MODE);
+        clear_flag(&_state, FLAG_DECIMAL_MODE);
         break;
     case CLV:
-        clear_flag(&cpu->state, FLAG_OVERFLOW);
+        clear_flag(&_state, FLAG_OVERFLOW);
         break;
 
     default:
@@ -859,8 +831,8 @@ static int execute(struct cpu_h *cpu,
     }
 
     /* Writes instruction and registers to debug fd */
-    trace_execution(cpu->disassemble_fd, instr,
-                    &cpu->state_before, &cpu->state);
+    trace_execution(_trace_fd, instr,
+                    &_state_before, &_state);
 
     return 0;
 }
@@ -896,14 +868,13 @@ static int get_num_operands(addressing_modes mode)
     }
 }
 
-static int fetch_and_decode(struct cpu_h *cpu,
-                            struct instruction *instr)
+static int fetch_and_decode(struct instruction *instr)
 {
     uint8_t      op_code;
     int          num_operands;
     uint8_t      *operands = instr->operands;
 
-    op_code = cpu->mem_get(cpu->state.pc++);
+    op_code = _mem_get(_state.pc++);
     instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
@@ -911,11 +882,11 @@ static int fetch_and_decode(struct cpu_h *cpu,
     case 0:
         break;
     case 1:
-        operands[0] = cpu->mem_get(cpu->state.pc++);
+        operands[0] = _mem_get(_state.pc++);
         break;
     case 2:
-        operands[0] = cpu->mem_get(cpu->state.pc++);
-        operands[1] = cpu->mem_get(cpu->state.pc++);
+        operands[0] = _mem_get(_state.pc++);
+        operands[1] = _mem_get(_state.pc++);
         break;
     default:
         printf("Unknown number of operands for mode: %d\n",
@@ -926,68 +897,51 @@ static int fetch_and_decode(struct cpu_h *cpu,
     return 0;
 }
 
-int cpu_create(int disassemble_fd,
-               cpu_mem_get mem_get,
-               cpu_mem_set mem_set,
-               struct cpu_h **cpu_out)
+void cpu_init(cpu_mem_get mem_get,
+              cpu_mem_set mem_set,
+              int trace_fd)
 {
-    struct cpu_h *cpu;
-
-    *cpu_out = NULL;
-
-    cpu = calloc(1, sizeof(*cpu));
-    if (!cpu) {
-        return -1;
-    }
-
-    /* Initialize self */
-    cpu->mem_get = mem_get;
-    cpu->mem_set = mem_set;
-    cpu->disassemble_fd = disassemble_fd;
-
-    *cpu_out = cpu;
-    return 0;
+    _mem_get = mem_get;
+    _mem_set = mem_set;
+    _trace_fd = trace_fd;
+    memset(&_state, 0, sizeof(_state));
+    _irq_pending = false;
+    _stack_overflow = false;
+    _stack_underflow = false;
 }
 
-int cpu_poweron(struct cpu_h *cpu)
+void cpu_poweron()
 {
     /* Empty stack */
-    cpu->state.sp = 0xff;
-
-    return 0;
+    _state.sp = 0xff;
 }
 
-int cpu_set_state(struct cpu_h *cpu, struct cpu_state *state)
+void cpu_set_state(struct cpu_state *state)
 {
-    cpu->state = *state;
-    return 0;
+    _state = *state;
 }
 
-int cpu_step(struct cpu_h *cpu,
-             struct cpu_state *state_out)
+void cpu_step(struct cpu_state *state_out)
 {
     struct instruction instr;
 
-    if (cpu->irq_pending) {
-        interrupt_request(cpu);
-        cpu->irq_pending = false;
+    if (_irq_pending) {
+        interrupt_request();
+        _irq_pending = false;
     }
 
     /* Copy for debugging purposes. */
-    cpu->state_before = cpu->state;
+    _state_before = _state;
 
-    fetch_and_decode(cpu, &instr);
-    execute(cpu, &instr);
+    fetch_and_decode(&instr);
+    execute(&instr);
 
     if (state_out) {
-        *state_out = cpu->state;
+        *state_out = _state;
     }
-
-    return 0;
 }
 
-static void get_instruction(struct cpu_h *cpu,
-                            uint16_t address,
+static void get_instruction(uint16_t address,
                             struct instruction *instr,
                             uint8_t *offset)
 {
@@ -995,21 +949,20 @@ static void get_instruction(struct cpu_h *cpu,
     int     num_operands;
     uint8_t *operands = instr->operands;
 
-    op_code = cpu->mem_get(address++);
+    op_code = _mem_get(address++);
     instr->operation = &opcodes[op_code];
 
     num_operands = get_num_operands(instr->operation->mode);
     if (num_operands > 0) {
-        operands[0] = cpu->mem_get(address++);
+        operands[0] = _mem_get(address++);
     }
     if (num_operands > 1) {
-        operands[1] = cpu->mem_get(address++);
+        operands[1] = _mem_get(address++);
     }
     *offset = num_operands + 1;
 }
 
-void cpu_disassembly_at(struct cpu_h *cpu,
-                        int fd,
+void cpu_disassembly_at(int fd,
                         uint16_t address,
                         int num_instructions)
 {
@@ -1017,15 +970,10 @@ void cpu_disassembly_at(struct cpu_h *cpu,
     uint8_t offset;
 
     while (num_instructions--) {
-        get_instruction(cpu, address, &instr, &offset);
+        get_instruction(address, &instr, &offset);
         trace_instruction(fd, address, &instr, 0);
         address += offset;
         write(fd, "\n", 1);
     }
-}
-
-void cpu_destroy(struct cpu_h *cpu)
-{
-    free(cpu);
 }
 

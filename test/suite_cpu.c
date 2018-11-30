@@ -10,7 +10,6 @@
 
 char _ram[RAM_SIZE];
 
-struct cpu_h     *_cpu;
 struct cpu_state _state;
 
 struct test {
@@ -88,13 +87,8 @@ int each_before()
     memset(&_state, 0, sizeof(_state));
 
     set_known_mem_values();
+    cpu_init(mem_get, mem_set, STDOUT_FILENO);
 
-    return cpu_create(STDOUT_FILENO, mem_get, mem_set, &_cpu) == 0;
-}
-
-int each_after()
-{
-    cpu_destroy(_cpu);
     return 0;
 }
 
@@ -171,9 +165,9 @@ int run_tests(struct test *tests, int num)
         _state.reg_y = tests[i].init_reg_y;
         _state.flags = tests[i].init_flags;
         _state.sp = 0xff;
-        cpu_set_state(_cpu, &_state);
+        cpu_set_state(&_state);
         for (int j=0; j < tests[i].num_steps; j++) {
-            cpu_step(_cpu, &_state);
+            cpu_step(&_state);
         }
         if (!check_test(&tests[i], &_state)) {
             success = 0;

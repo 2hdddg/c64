@@ -7,31 +7,23 @@
 
 int main(int argc, char **argv)
 {
-    struct cpu_h *cpu = NULL;
     struct cpu_state state = {
         .pc = 0x2000,
     };
 
-    if (cpu_create(STDOUT_FILENO,
-                   mem_get_for_cpu,
-                   mem_set_for_cpu,
-                   &cpu) < 0) {
-        return -1;
-    }
-
+    cpu_init(mem_get_for_cpu, mem_set_for_cpu,
+             STDOUT_FILENO);
     printf("Powering on..\n");
     mem_reset();
-    cpu_poweron(cpu);
+    cpu_poweron();
 
     int num = 12;
-    cpu_set_state(cpu, &state);
+    cpu_set_state(&state);
     while (num--) {
-        cpu_step(cpu, &state);
+        cpu_step(&state);
     }
 
-    cpu_disassembly_at(cpu, STDOUT_FILENO, 0xff48, 10);
-
-    cpu_destroy(cpu);
+    cpu_disassembly_at(STDOUT_FILENO, 0xff48, 10);
 
     return 0;
 }
