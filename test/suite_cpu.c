@@ -72,6 +72,11 @@ static void set_known_mem_values()
     _ram[0x0014] = 0x00;
     _ram[0x0015] = 0x50;
 
+    /* Wrapped around vector */
+    _ram[0x0100] = 0x10;
+    _ram[0x01ff] = 0x20; /* Indirect address here will be 0x1020 */
+    _ram[0x0200] = 0x30; /* not 0x3020.
+
     /* Known value on the stack */
     _ram[0x0110] = 0x80;
     _ram[0x0180] = FLAG_DECIMAL_MODE|FLAG_BRK;
@@ -1898,12 +1903,49 @@ int test_decrease()
 /* JMP */
 int test_jump()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "Absolute",
+            .instructions = { 0x4c, 0x00, 0x50 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_pc = true,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+            .state = {
+                .flags = FLAG_NEGATIVE|FLAG_ZERO,
+                .pc = 0x5000,
+            },
+        },
+        /* Vector at 0x0014 points to 0x5000 */
+        {
+            .name = "Indirect",
+            .instructions = { 0x6c, 0x14, 0x00 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = 0x5000,
+            },
+        },
+        /* Vector at 0x01ff points to 0x3020 but since high byte
+         * is at another page it wraps. */
+        {
+            .name = "Indirect, last byte of page",
+            .instructions = { 0x6c, 0xff, 0x01 },
+            .num_steps = 1,
+            .check_pc = true,
+            .state = {
+                .pc = 0x1020,
+            },
+        },
+    };
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 /* JSR */
 int test_jump_to_subroutine()
 {
+    /* Absolute */
+    /* Check stack */
     return 0;
 }
 
@@ -1932,6 +1974,7 @@ int test_return_from_subroutine()
 /* RTI */
 int test_return_from_interrupt()
 {
+    
     return 0;
 }
 
