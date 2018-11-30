@@ -341,6 +341,24 @@ static void and(struct cpu_h *cpu,
     cpu_instr_and(&state->reg_a, operand, &state->flags);
 }
 
+static void or(struct cpu_h *cpu,
+               struct instruction *instr)
+{
+    uint8_t          operand = 0;
+    struct cpu_state *state = &cpu->state;
+    uint16_t         address;
+
+    if (instr->operation->mode == Immediate) {
+        operand = instr->operands[0];
+    }
+    else {
+        address = get_address_from_mode(cpu, instr);
+        operand = cpu->mem_get(cpu->mem, address);
+    }
+
+    cpu_instr_or(&state->reg_a, operand, &state->flags);
+}
+
 static void asl(struct cpu_h *cpu,
                 struct instruction *instr)
 {
@@ -721,6 +739,9 @@ static int execute(struct cpu_h *cpu,
         break;
     case AND:
         and(cpu, instr);
+        break;
+    case ORA:
+        or(cpu, instr);
         break;
     case ASL:
         asl(cpu, instr);

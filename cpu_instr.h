@@ -9,6 +9,9 @@ void cpu_instr_transfer(uint8_t from,
 void cpu_instr_and(uint8_t *op1,
                    uint8_t op2,
                    uint8_t *flags_out);
+void cpu_instr_or(uint8_t *op1,
+                  uint8_t op2,
+                  uint8_t *flags_out);
 void cpu_instr_asl(uint8_t operand,
                    uint8_t *shift_out,
                    uint8_t *flags_out);

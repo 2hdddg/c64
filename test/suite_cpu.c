@@ -75,7 +75,7 @@ static void set_known_mem_values()
     /* Wrapped around vector */
     _ram[0x0100] = 0x10;
     _ram[0x01ff] = 0x20; /* Indirect address here will be 0x1020 */
-    _ram[0x0200] = 0x30; /* not 0x3020.
+    _ram[0x0200] = 0x30; /* not 0x3020. */
 
     /* Known value on the stack */
     _ram[0x0110] = 0x80;
@@ -900,7 +900,119 @@ int test_and_instructions()
 /* ORA */
 int test_or_instrucion()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "Immediate",
+            .instructions = { 0x09, 0x80 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x88,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0x08,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page",
+            .instructions = { 0x05, 0x01, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0xa0,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0x80,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x15, 0x00, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x30,
+                .flags = 0x00,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x30,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x0d, 0x00, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0,
+            },
+            .init_reg_a = 0x01,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x1d, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x00,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0x19, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x03,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x01,
+            .init_reg_y = 0x02,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Indirect, X",
+            .instructions = { 0x01, 0x10 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x02,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x00,
+            .init_reg_x = 0x02,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0x11, 0x10 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x07,
+                .flags = FLAG_CARRY,
+            },
+            .init_reg_a = 0x05,
+            .init_flags = FLAG_ZERO|FLAG_NEGATIVE|FLAG_CARRY,
+            .init_reg_y = 0x03,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 /* ADC */
