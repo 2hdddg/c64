@@ -1009,6 +1009,18 @@ int test_or_instrucion()
     return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
+/* EOR */
+int test_xor_instrucion()
+{
+    return 0;
+}
+
+/* NOP */
+int test_nop_instrucion()
+{
+    return 0;
+}
+
 /* ADC */
 int test_add_with_carry_instructions()
 {
