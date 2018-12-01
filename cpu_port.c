@@ -15,6 +15,10 @@ const uint8_t _line_loram  = CPU_PORT_LORAM;
 const uint8_t _line_hiram  = CPU_PORT_HIRAM;
 const uint8_t _line_charen = CPU_PORT_CHAREN;
 
+uint8_t _line_cassette_motor_off    = CPU_PORT_CASSETTE_MOTOR;
+uint8_t _line_cassette_write_data   = 0x00;
+uint8_t _line_cassette_sense_closed = CPU_PORT_CASSETTE_SENSE;
+
 
 static inline bool _is_direction_in(uint8_t line)
 {
@@ -38,6 +42,16 @@ static void _on_changed()
     }
     if (_is_direction_in(CPU_PORT_CHAREN)) {
         _peripheral_reg |= _line_charen;
+    }
+
+    if (_is_direction_in(CPU_PORT_CASSETTE_WRITE)) {
+        _peripheral_reg |= _line_cassette_write_data;
+    }
+    if (_is_direction_in(CPU_PORT_CASSETTE_SENSE)) {
+        _peripheral_reg |= _line_cassette_sense_closed;
+    }
+    if (_is_direction_in(CPU_PORT_CASSETTE_MOTOR)) {
+        _peripheral_reg |= _line_cassette_motor_off;
     }
 
     /* Forward to pins on PLA */

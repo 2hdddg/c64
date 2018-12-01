@@ -12,6 +12,9 @@
 #define CPU_PORT_LORAM  0x01
 #define CPU_PORT_HIRAM  0x02
 #define CPU_PORT_CHAREN 0x04
+#define CPU_PORT_CASSETTE_WRITE 0x08
+#define CPU_PORT_CASSETTE_SENSE 0x10
+#define CPU_PORT_CASSETTE_MOTOR 0x20
 
 void cpu_port_init();
 
