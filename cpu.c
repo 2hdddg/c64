@@ -638,17 +638,28 @@ static void jump_to_subroutine(struct instruction *instr)
     _state.pc = address;
 }
 
+static void return_from_interrupt()
+{
+    _state.flags = stack_pop();
+    _state.pc = stack_pop_address();
+}
+
 static int execute(struct instruction *instr)
 {
     struct cpu_state *state = &_state;
 
     switch (instr->operation->mnem) {
+
+    /* Interrupt instructions */
     case BRK:
         /* Signals that IRQ is due to break */
         set_flag(state, FLAG_BRK);
         /* Exception on how program counter is counted */
         state->pc++;
         _irq_pending = true;
+        break;
+    case RTI:
+        return_from_interrupt();
         break;
 
     /* Stack instructions */
@@ -836,6 +847,10 @@ static int execute(struct instruction *instr)
         break;
     case CLV:
         clear_flag(&_state, FLAG_OVERFLOW);
+        break;
+
+    /* Other */
+    case NOP:
         break;
 
     default:
