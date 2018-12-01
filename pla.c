@@ -13,6 +13,7 @@ uint8_t *_rom_kernal;
 uint8_t *_rom_basic;
 uint8_t *_rom_chargen;
 
+
 uint8_t mem_get_kernal(uint16_t absolute, uint8_t relative,
                        uint8_t *ram)
 {

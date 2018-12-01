@@ -161,7 +161,7 @@ static const struct operation opcodes[256] = {
 { .mnem = SLO, .cycles = 4, .mode = Absolute_X, .undocumented = true,  },
 
 /* 20 - 2f */
-{ .mnem = JSR, .cycles = 0, .mode = Implied,    },
+{ .mnem = JSR, .cycles = 0, .mode = Absolute,    },
 { .mnem = AND, .cycles = 0, .mode = Indirect_X, },
 { .mnem = _U_, .cycles = 0, .mode = Undefined,  },
 { .mnem = RLA, .cycles = 0, .mode = Indirect_X, },

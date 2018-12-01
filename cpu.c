@@ -62,8 +62,8 @@ static uint8_t stack_pop()
 
 static void stack_push_address(uint16_t addr)
 {
-    stack_push(addr & 0xff);
     stack_push(addr >> 8);
+    stack_push(addr & 0xff);
 }
 
 static uint16_t stack_pop_address()
@@ -629,6 +629,15 @@ static void jump(struct instruction *instr)
     _state.pc = address;
 }
 
+static void jump_to_subroutine(struct instruction *instr)
+{
+    uint8_t  *ops    = instr->operands;
+    uint16_t address = make_address(ops[1], ops[0]);
+
+    stack_push_address(_state.pc);
+    _state.pc = address;
+}
+
 static int execute(struct instruction *instr)
 {
     struct cpu_state *state = &_state;
@@ -798,6 +807,9 @@ static int execute(struct instruction *instr)
     /* Jump instructions */
     case JMP:
         jump(instr);
+        break;
+    case JSR:
+        jump_to_subroutine(instr);
         break;
     case RTS:
         _state.pc = stack_pop_address();
