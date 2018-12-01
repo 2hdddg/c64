@@ -3,7 +3,9 @@ src = [
     'main.c',
     'mem.c',
     'cpu.c',
-    'cpu_instr.c']
+    'cpu_instr.c',
+    'cpu_port.c',
+    'pla.c']
 executable('c64', src)
 
 # Test suites

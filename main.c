@@ -3,6 +3,8 @@
 
 #include "mem.h"
 #include "cpu.h"
+#include "cpu_port.h"
+#include "pla.h"
 
 
 int main(int argc, char **argv)
@@ -11,10 +13,13 @@ int main(int argc, char **argv)
         .pc = 0x2000,
     };
 
+    mem_init();
+    pla_init();
+    cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu,
              STDOUT_FILENO);
-    printf("Powering on..\n");
     mem_reset();
+    printf("Powering on..\n");
     cpu_poweron();
 
     int num = 12;
