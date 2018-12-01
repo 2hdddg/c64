@@ -26,14 +26,18 @@ void mem_init()
 
 void mem_reset()
 {
+    memset(_ram, 0, 0xffff);
 
     //_ram[0] = 0xef;
     //_ram[1] = 0x37;
     /* Points to IRQ handler */
+/*
     _ram[0xfffe] = 0x48;
     _ram[0xffff] = 0xff;
+*/
 
     /* ROM IRQ service routine */
+/*
     _ram[0xff48] = 0x48;
     _ram[0xff49] = 0x8a;
     _ram[0xff4a] = 0x48;
@@ -50,6 +54,7 @@ void mem_reset()
     _ram[0xff55] = 0x6c;
     _ram[0xff56] = 0x16;
     _ram[0xff57] = 0x03;
+*/
 }
 
 void mem_set_for_cpu(uint16_t addr, uint8_t val)
@@ -83,15 +88,12 @@ void mem_install_hooks_for_cpu(struct mem_hook_install *install,
 {
     while (num_install--) {
         uint8_t page_index = install->page_start;
-        int     last_page = page_index + install->num_pages;
+        int     num_pages  = install->num_pages;
 
-        if (last_page > 255) {
-            printf("Too many pages\n");
-        }
-
-        for (; page_index < last_page; page_index++) {
+        while (num_pages--) {
             _cpu_hooks[page_index].set_hook = install->set_hook;
             _cpu_hooks[page_index].get_hook = install->get_hook;
+            page_index++;
         }
 
         install++;
