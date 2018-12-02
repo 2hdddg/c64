@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "pla.h"
 #include "mem.h"
@@ -14,6 +16,11 @@ uint8_t *_rom_basic;
 uint8_t *_rom_chargen;
 
 
+int _trace_banks_fd;
+bool _kernal_mapped;
+bool _basic_mapped;
+
+
 uint8_t mem_get_kernal(uint16_t absolute, uint8_t relative,
                        uint8_t *ram)
 {
@@ -24,6 +31,34 @@ uint8_t mem_get_basic(uint16_t absolute, uint8_t relative,
                       uint8_t *ram)
 {
     return _rom_basic[absolute - 0xa000];
+}
+
+static inline void trace_switch(const char *in, const char *out,
+                                bool is, bool was, int fd)
+{
+    if (is && !was) {
+        write(fd, in, strlen(in));
+    }
+    else if (!is && was) {
+        write(fd, out, strlen(out));
+    }
+}
+
+static inline void trace_banks()
+{
+    const char *kernal_in  = "Banking: KERNAL @ 0xe000\n";
+    const char *kernal_out = "Banking: ROM @ 0xe000\n";
+    const char *basic_in  = "Banking: BAIC @ 0xa000\n";
+    const char *basic_out = "Banking: RAM @ 0xa000\n";
+
+    if (_trace_banks_fd >= 0) {
+        trace_switch(kernal_in, kernal_out,
+                     _pin_hiram, _kernal_mapped,
+                     _trace_banks_fd);
+        trace_switch(basic_in, basic_out,
+                     _pin_loram, _basic_mapped,
+                     _trace_banks_fd);
+    }
 }
 
 static void configure()
@@ -46,6 +81,10 @@ static void configure()
     };
 
     mem_install_hooks_for_cpu(installs, 2);
+
+    trace_banks();
+    _kernal_mapped = _pin_hiram;
+    _basic_mapped = _pin_loram;
 }
 
 
@@ -59,6 +98,9 @@ void pla_init(uint8_t *rom_kernal,
     _rom_kernal = rom_kernal;
     _rom_basic = rom_basic;
     _rom_chargen = rom_chargen;
+    _trace_banks_fd = -1;
+    _kernal_mapped = false;
+    _basic_mapped = false;
 }
 
 void pla_pins_from_cpu(bool loram,
@@ -69,4 +111,9 @@ void pla_pins_from_cpu(bool loram,
     _pin_hiram = hiram;
     _pin_charen = charen;
     configure();
+}
+
+void pla_trace_banks(int fd)
+{
+    _trace_banks_fd = fd;
 }

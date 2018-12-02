@@ -17,3 +17,5 @@ void pla_pins_from_cpu(bool loram_high,
                        bool hiram_high,
                        bool charen_high);
 
+void pla_trace_banks(int fd);
+
