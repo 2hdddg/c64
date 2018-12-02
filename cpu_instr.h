@@ -31,6 +31,10 @@ void cpu_instr_add(uint8_t op1,
                    uint8_t op2,
                    uint8_t *added,
                    uint8_t *flags);
+void cpu_instr_add_decimal(uint8_t op1,
+                   uint8_t op2,
+                   uint8_t *added,
+                   uint8_t *flags);
 void cpu_instr_sub(uint8_t op1,
                    uint8_t op2,
                    uint8_t *subtracted,

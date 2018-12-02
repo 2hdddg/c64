@@ -178,6 +178,44 @@ void cpu_instr_add(uint8_t op1,
     *added = result;
 }
 
+void cpu_instr_add_decimal(uint8_t reg_a,
+                           uint8_t operand,
+                           uint8_t *added,
+                           uint8_t *flags)
+{
+    /* Copied from:
+     * http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc */
+    uint8_t flag_vals = 0x00;
+    uint8_t carry = *flags & FLAG_CARRY ? 1 : 0;
+    uint8_t a_lo = (reg_a & 0x0f) +
+                   (operand & 0x0f) + carry;
+    uint8_t a_hi = (reg_a >> 4) +
+                   (operand >> 4) + a_lo > 15 ? 1 : 0;
+    a_lo += a_lo > 9 ? 6 : 0;
+
+
+    if (((reg_a + operand + carry) & 0xff) == 0) {
+        flag_vals = FLAG_ZERO;
+    }
+    if ((a_hi & 0x08) != 0) {
+        flag_vals |= FLAG_NEGATIVE;
+    }
+    if (((a_hi << 4) ^ reg_a) & 0x80 &&
+        !((reg_a ^ operand) & 0x80)) {
+        flag_vals |= FLAG_OVERFLOW;
+    }
+
+    a_hi += a_hi > 9 ? 6 : 0;
+
+    if (a_hi > 15) {
+        flag_vals |= FLAG_CARRY;
+    }
+
+    *flags = set_flags(FLAG_CARRY|FLAG_ZERO|FLAG_NEGATIVE|FLAG_OVERFLOW,
+                       flag_vals, *flags);
+    *added = ((a_hi << 4) | (a_lo & 0x0f)) & 0xff;
+}
+
 static void diff(uint8_t op1,
                  uint8_t op2,
                  uint8_t borrow,

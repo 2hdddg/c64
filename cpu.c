@@ -475,8 +475,6 @@ static void bit(struct instruction *instr)
 static void add(struct instruction *instr)
 {
     uint8_t          operand = 0;
-    struct cpu_state *state = &_state;
-    uint8_t          carry = state->flags & FLAG_CARRY ? 1 : 0;
     uint16_t         address;
 
     if (instr->operation->mode == Immediate) {
@@ -487,44 +485,13 @@ static void add(struct instruction *instr)
         operand = _mem_get(address);
     }
 
-    if (state->flags & FLAG_DECIMAL_MODE) {
-        /* Copied from:
-         * http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc
-         */
-        uint8_t a_lo = (state->reg_a & 0x0f) +
-                       (operand & 0x0f) + carry;
-        uint8_t a_hi = (state->reg_a >> 4) +
-                       (operand >> 4) + a_lo > 15 ? 1 : 0;
-        a_lo += a_lo > 9 ? 6 : 0;
-
-        clear_flag(state, FLAG_NEGATIVE);
-        clear_flag(state, FLAG_CARRY);
-        clear_flag(state, FLAG_OVERFLOW);
-        clear_flag(state, FLAG_ZERO);
-
-        if (((state->reg_a + operand + carry) & 0xff) == 0) {
-            set_flag(state, FLAG_ZERO);
-        }
-        if ((a_hi & 0x08) != 0) {
-            set_flag(state, FLAG_NEGATIVE);
-        }
-        if (((a_hi << 4) ^ state->reg_a) & 0x80 &&
-            !((state->reg_a ^ operand) & 0x80)) {
-            set_flag(state, FLAG_OVERFLOW);
-        }
-
-        a_hi += a_hi > 9 ? 6 : 0;
-
-        if (a_hi > 15) {
-            set_flag(state, FLAG_CARRY);
-        }
-
-        /* Store the new value */
-        state->reg_a = ((a_hi << 4) | (a_lo & 0x0f)) & 0xff;
+    if (_state.flags & FLAG_DECIMAL_MODE) {
+        cpu_instr_add_decimal(_state.reg_a, operand,
+                              &_state.reg_a, &_state.flags);
     }
     else {
-        cpu_instr_add(state->reg_a, operand,
-                      &state->reg_a, &state->flags);
+        cpu_instr_add(_state.reg_a, operand,
+                      &_state.reg_a, &_state.flags);
     }
 }
 
