@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     printf("Powering on..\n");
     cpu_poweron();
 
-    int num = 150000;
+    int num = 1500000;
     cpu_set_state(&state);
     while (num--) {
         cpu_step(&state);

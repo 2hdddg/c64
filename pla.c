@@ -6,6 +6,9 @@
 #include "pla.h"
 #include "mem.h"
 #include "cia1.h"
+#include "cia2.h"
+#include "vic.h"
+#include "sid.h"
 
 /* Input pins, true indicates high */
 bool _pin_loram;

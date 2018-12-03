@@ -6,6 +6,9 @@ src = [
     'cpu_instr.c',
     'cpu_port.c',
     'cia1.c',
+    'cia2.c',
+    'vic.c',
+    'sid.c',
     'pla.c']
 executable('c64', src)
 

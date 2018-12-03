@@ -821,7 +821,8 @@ static int execute(struct instruction *instr)
         break;
 
     default:
-        printf("Unknown mnem\n");
+        printf("Unknown mnem: %s\n",
+               mnemonics_strings[instr->operation->mnem]);
     }
 
     /* Writes instruction and registers to debug fd */
