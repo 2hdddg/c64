@@ -46,21 +46,22 @@ int main(int argc, char **argv)
 
     mem_init();
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
+    pla_trace_banks(STDOUT_FILENO);
 
     cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu,
-             STDOUT_FILENO);
+             -1/*STDOUT_FILENO*/);
     mem_reset();
     printf("Powering on..\n");
     cpu_poweron();
 
-    int num = 1500;
+    int num = 150000;
     cpu_set_state(&state);
     while (num--) {
         cpu_step(&state);
     }
 
-    cpu_disassembly_at(STDOUT_FILENO, 0xff48, 10);
+    //cpu_disassembly_at(STDOUT_FILENO, 0xff48, 10);
 
     return 0;
 }

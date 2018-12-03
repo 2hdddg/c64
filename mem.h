@@ -1,4 +1,8 @@
+#pragma once
+
 #include <stdint.h>
+
+/* Mem access is 2Mhz. Interleaved between CPU and VIC.*/
 
 
 void mem_init();
@@ -28,6 +32,6 @@ struct mem_hook_install {
     uint8_t      num_pages;
 };
 
-void mem_install_hooks_for_cpu(struct mem_hook_install *install,
+void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
                                int num_install);
 

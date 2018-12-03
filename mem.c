@@ -83,7 +83,7 @@ uint8_t mem_get_for_cpu(uint16_t addr)
     }
 }
 
-void mem_install_hooks_for_cpu(struct mem_hook_install *install,
+void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
                                int num_install)
 {
     while (num_install--) {

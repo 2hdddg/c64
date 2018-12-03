@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+/* Clocked at 1.023 Mhz NTSC or 0.985 Mhz PAL */
+/* Boost if VIC turned off */
+
+/* VIC-II clocked at 17.73447 Mhz PAL or 14.31818 Mhz (NTSC). */
 
 /* Processor status flags */
 #define FLAG_CARRY        0x01
