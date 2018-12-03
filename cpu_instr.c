@@ -64,6 +64,14 @@ void cpu_instr_or(uint8_t *op1,
     eval_zero_and_neg(*op1, flags);
 }
 
+void cpu_instr_xor(uint8_t *op1,
+                   uint8_t op2,
+                   uint8_t *flags)
+{
+    *op1 ^= op2;
+    eval_zero_and_neg(*op1, flags);
+}
+
 void cpu_instr_asl(uint8_t operand,
                    uint8_t *shifted,
                    uint8_t *flags)

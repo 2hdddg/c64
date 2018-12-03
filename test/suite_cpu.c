@@ -1012,11 +1012,123 @@ int test_or_instrucion()
 /* EOR */
 int test_xor_instrucion()
 {
-    return 0;
+    struct test tests[] = {
+        {
+            .name = "Immediate",
+            .instructions = { 0x49, 0x80 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x7f,
+                .flags = 0,
+            },
+            .init_reg_a = 0xff,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page",
+            .instructions = { 0x45, 0x01, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x21,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Zero page, X",
+            .instructions = { 0x55, 0x00, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x00,
+                .flags = FLAG_ZERO,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x20,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute",
+            .instructions = { 0x4d, 0x00, 0x40, },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x80,
+                .flags = FLAG_NEGATIVE,
+            },
+            .init_reg_a = 0x80,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Absolute, X",
+            .instructions = { 0x5d, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x03,
+                .flags = 0,
+            },
+            .init_reg_x = 0x01,
+            .init_reg_a = 0x02,
+            .init_flags = FLAG_NEGATIVE|FLAG_ZERO,
+        },
+        {
+            .name = "Absolute, Y",
+            .instructions = { 0x59, 0x00, 0x40 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x02,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x00,
+            .init_reg_y = 0x02,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Indirect, X",
+            .instructions = { 0x41, 0x10 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x01,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x03,
+            .init_reg_x = 0x02,
+            .init_flags = 0x00,
+        },
+        {
+            .name = "Indirect, Y",
+            .instructions = { 0x51, 0x10 },
+            .num_steps = 1,
+            .check_flags = true,
+            .check_reg_a = true,
+            .state = {
+                .reg_a = 0x07,
+                .flags = 0x00,
+            },
+            .init_reg_a = 0x04,
+            .init_flags = 0x00,
+            .init_reg_y = 0x03,
+        },
+    };
+
+    return run_tests(tests, sizeof(tests) / sizeof(tests[0]));
 }
 
 /* NOP */
-int test_nop_instrucion()
+int xtest_nop_instrucion()
 {
     return 0;
 }
@@ -2060,7 +2172,7 @@ int test_jump()
 }
 
 /* JSR */
-int test_jump_to_subroutine()
+int xtest_jump_to_subroutine()
 {
     /* Absolute */
     /* Check stack */
@@ -2090,9 +2202,8 @@ int test_return_from_subroutine()
 }
 
 /* RTI */
-int test_return_from_interrupt()
+int xtest_return_from_interrupt()
 {
-    
     return 0;
 }
 

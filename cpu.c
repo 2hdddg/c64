@@ -349,6 +349,23 @@ static void or(struct instruction *instr)
     cpu_instr_or(&state->reg_a, operand, &state->flags);
 }
 
+static void xor(struct instruction *instr)
+{
+    uint8_t          operand = 0;
+    struct cpu_state *state = &_state;
+    uint16_t         address;
+
+    if (instr->operation->mode == Immediate) {
+        operand = instr->operands[0];
+    }
+    else {
+        address = get_address_from_mode(instr);
+        operand = _mem_get(address);
+    }
+
+    cpu_instr_xor(&state->reg_a, operand, &state->flags);
+}
+
 static void asl(struct instruction *instr)
 {
     uint8_t  operand;
@@ -708,6 +725,9 @@ static int execute(struct instruction *instr)
         break;
     case ORA:
         or(instr);
+        break;
+    case EOR:
+        xor(instr);
         break;
     case ASL:
         asl(instr);
