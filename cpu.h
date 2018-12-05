@@ -33,6 +33,8 @@ void cpu_init(cpu_mem_get mem_get,
 void cpu_poweron();
 void cpu_step(struct cpu_state *state_out);
 
+void cpu_interrupt_request();
+
 /* For interactive use */
 void cpu_disassembly_at(int fd,
                         uint16_t address,

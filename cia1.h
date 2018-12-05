@@ -8,10 +8,11 @@
  * Depends on NTSC/PAL.
  */
 
-void cia1_create();
+void cia1_init();
 
 void cia1_reset(); /* RES pin low */
 
+void cia1_cycle();
 
 /* PLA maps address space */
 uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,

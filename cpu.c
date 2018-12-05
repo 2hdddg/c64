@@ -238,9 +238,11 @@ static void interrupt_request()
     stack_push(_state.flags);
 
     clear_flag(&_state, FLAG_BRK);
+    set_flag(&_state, FLAG_IRQ_DISABLE);
 
     /* Retrieve handler at cpu hardwired address */
     read_address(ADDR_IRQ_VECTOR, &handler_address);
+    printf("Jumping to irq handler at %04x\n", handler_address);
     /* Point program counter to IRQ handler routine */
     _state.pc = handler_address;
 }
@@ -934,6 +936,13 @@ void cpu_poweron()
 void cpu_set_state(struct cpu_state *state)
 {
     _state = *state;
+}
+
+void cpu_interrupt_request()
+{
+    if (!(_state.flags & FLAG_IRQ_DISABLE)) {
+        _irq_pending = true;
+    }
 }
 
 void cpu_step(struct cpu_state *state_out)

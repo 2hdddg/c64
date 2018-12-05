@@ -1,10 +1,12 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "mem.h"
 #include "cpu.h"
 #include "cpu_port.h"
 #include "pla.h"
+#include "cia1.h"
 
 uint8_t _basic_rom[8192];
 uint8_t _kernal_rom[8192];
@@ -47,17 +49,21 @@ int main(int argc, char **argv)
     mem_init();
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
     pla_trace_banks(STDOUT_FILENO);
+    cia1_init();
 
     cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu,
              -1/*STDOUT_FILENO*/);
     mem_reset();
+    cia1_reset();
     printf("Powering on..\n");
     cpu_poweron();
 
     int num = 1500000;
     cpu_set_state(&state);
     while (num--) {
+        /* Should happen at approx 1Mhz */
+        cia1_cycle();
         cpu_step(&state);
     }
 
