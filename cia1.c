@@ -7,6 +7,8 @@
 
 uint8_t _interrupt_data;
 uint8_t _interrupt_mask;
+uint8_t _data_direction_port_A;
+uint8_t _data_direction_port_B;
 
 typedef enum {
     clock_cycle,
@@ -136,7 +138,7 @@ void cia1_cycle()
 
     /* Generate interrupt */
     if (underflowed) {
-        printf("Timer underflowed\n");
+        //printf("Timer underflowed\n");
         if (_timer_A.port_B_on) {
             /* TODO: */
         }
@@ -160,6 +162,10 @@ uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
     uint8_t val;
 
     switch (reg) {
+    case 0x02:
+        return _data_direction_port_A;
+    case 0x03:
+        return _data_direction_port_B;
     case 0x04:
         return _timer_A.timer_lo;
     case 0x05:
@@ -172,7 +178,8 @@ uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
         /* No more interrupt */
         return val;
     default:
-        printf("Reading unhandled CIA 1 register: %02x\n", reg);
+        //printf("Reading unhandled CIA 1 register: %02x\n", reg);
+        break;
     }
 
     return 0;
@@ -185,6 +192,12 @@ void cia1_mem_set(uint8_t val, uint16_t absolute,
     uint8_t reg = (absolute - 0xdc00) % 0x10;
 
     switch (reg) {
+    case 0x02:
+        _data_direction_port_A = val;
+        break;
+    case 0x03:
+        _data_direction_port_B = val;
+        break;
     case 0x04:
         set_latch_lo(&_timer_A, val);
         break;
@@ -200,7 +213,8 @@ void cia1_mem_set(uint8_t val, uint16_t absolute,
         /* TODO: Handle 6 & 7 */
         break;
     default:
-        printf("Writing unhandled CIA 1 register: %02x: %02x\n", reg, val);
+        //printf("Writing unhandled CIA 1 register: %02x: %02x\n", reg, val);
+        break;
     }
 }
 

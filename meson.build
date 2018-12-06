@@ -10,7 +10,8 @@ src = [
     'vic.c',
     'sid.c',
     'pla.c']
-executable('c64', src)
+thread_dep = dependency('threads')
+executable('c64', src, dependencies: [thread_dep])
 
 # Test suites
 shared_library('suite_cpu', [
