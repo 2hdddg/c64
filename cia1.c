@@ -44,10 +44,9 @@ void cia1_reset()
 
 void cia1_cycle()
 {
-    bool underflowed_A = cia_timer_cycle_A(&_timer_A,
-                                           &_timer_B);
+    cia_timer_cycle(&_timer_A, &_timer_B);
     /* Generate interrupt */
-    if (underflowed_A) {
+    if (_timer_A.underflowed) {
         //printf("Timer underflowed\n");
         if (_timer_A.port_B_on) {
             /* TODO: */

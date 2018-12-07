@@ -21,6 +21,8 @@ shared_library('suite_cpu_examples', [
     'test/suite_cpu_examples.c', 'cpu.c', 'cpu_instr.c'])
 shared_library('suite_mem', [
     'test/suite_mem.c', 'mem.c'])
-shared_library('cpu_port', [
+shared_library('suite_cpu_port', [
     'test/suite_cpu_port.c', 'cpu_port.c', 'mem.c'])
+shared_library('suite_cia_timer', [
+    'test/suite_cia_timer.c', 'cia_timer.c'])
 

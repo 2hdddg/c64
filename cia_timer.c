@@ -4,15 +4,15 @@
 #include "cia_timer.h"
 
 
-void cia_timer_reset(struct cia_timer *timer)
-{
-    memset(&timer, 0, sizeof(*timer));
-}
-
-void cia_timer_load_latch(struct cia_timer *timer)
+static void load_latch(struct cia_timer *timer)
 {
     timer->timer_hi = timer->latch_hi;
     timer->timer_lo = timer->latch_lo;
+}
+
+void cia_timer_reset(struct cia_timer *timer)
+{
+    memset(&timer, 0, sizeof(*timer));
 }
 
 void cia_timer_set_latch_lo(struct cia_timer *timer, uint8_t lo)
@@ -24,7 +24,7 @@ void cia_timer_set_latch_hi(struct cia_timer *timer, uint8_t hi)
 {
     timer->latch_hi = hi;
     if (!timer->started) {
-        cia_timer_load_latch(timer);
+        load_latch(timer);
     }
 }
 
@@ -32,7 +32,7 @@ void cia_timer_control_A(struct cia_timer *timer,
                          uint8_t control)
 {
     if (control & 0x10) {
-        cia_timer_load_latch(timer);
+        load_latch(timer);
     }
     timer->started = (control & 0x01) > 0;
     timer->port_B_on = (control & 0x02) > 0;
@@ -48,11 +48,10 @@ void cia_timer_control_A(struct cia_timer *timer,
 }
 
 /* Returns true if underflowed */
-bool cia_timer_cycle_A(struct cia_timer *timer_A,
-                       struct cia_timer *timer_B)
+void cia_timer_cycle(struct cia_timer *timer_A,
+                     struct cia_timer *timer_B)
 {
-    bool underflowed = false;
-
+    timer_A->underflowed = false;
     if (timer_A->started) {
         bool count;
 
@@ -71,13 +70,12 @@ bool cia_timer_cycle_A(struct cia_timer *timer_A,
             if (timer_A->timer_lo == 0xff) {
                 timer_A->timer_hi--;
                 if (timer_A->timer_hi == 0xff) {
-                    cia_timer_load_latch(timer_A);
-                    underflowed = true;
+                    load_latch(timer_A);
+                    timer_A->underflowed = true;
                     timer_A->started = !timer_A->one_shot;
                 }
             }
         }
     }
-    return underflowed;
 }
 
