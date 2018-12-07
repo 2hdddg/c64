@@ -52,12 +52,12 @@ void cia1_cycle()
             /* TODO: */
         }
 
-        _interrupt_data |= 0x01;
+        _interrupt_data |= CIA_INT_UNDERFLOW_TIMER_A;
     }
 
     /* Update interrupt status */
     if (_interrupt_data & _interrupt_mask) {
-        _interrupt_data |= 0x80;
+        _interrupt_data |= CIA_INT_OCCURED;
         /* TODO: IRQ or NMI (cia2) */
         cpu_interrupt_request();
     }
@@ -67,19 +67,19 @@ uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
     /* Registers are mirrored at each 16 bytes */
-    uint8_t reg = (absolute - 0xdc00) % 0x10;
+    uint8_t reg = (absolute - CIA1_ADDRESS) % 0x10;
     uint8_t val;
 
     switch (reg) {
-    case 0x02:
+    case CIA_REG_DATA_DIRECTION_PORT_A:
         return _data_direction_port_A;
-    case 0x03:
+    case CIA_REG_DATA_DIRECTION_PORT_B:
         return _data_direction_port_B;
-    case 0x04:
+    case CIA_REG_TIMER_A_LO:
         return _timer_A.timer_lo;
-    case 0x05:
+    case CIA_REG_TIMER_A_HI:
         return _timer_A.timer_hi;
-    case 0x0d:
+    case CIA_REG_INTERRUPT_CONTROL:
         printf("Reading & clearing interrupt status\n");
         val = _interrupt_data;
         /* Cleared on read */
@@ -98,26 +98,26 @@ void cia1_mem_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
     /* Registers are mirrored at each 16 bytes */
-    uint8_t reg = (absolute - 0xdc00) % 0x10;
+    uint8_t reg = (absolute - CIA1_ADDRESS) % 0x10;
 
     switch (reg) {
-    case 0x02:
+    case CIA_REG_DATA_DIRECTION_PORT_A:
         _data_direction_port_A = val;
         break;
-    case 0x03:
+    case CIA_REG_DATA_DIRECTION_PORT_B:
         _data_direction_port_B = val;
         break;
-    case 0x04:
+    case CIA_REG_TIMER_A_LO:
         cia_timer_set_latch_lo(&_timer_A, val);
         break;
-    case 0x05:
+    case CIA_REG_TIMER_A_HI:
         cia_timer_set_latch_hi(&_timer_A, val);
         break;
-    case 0x0d:
+    case CIA_REG_INTERRUPT_CONTROL:
         control_interrupts(val);
         printf("Changed interrupt mask to %02x\n", _interrupt_mask);
         break;
-    case 0x0e:
+    case CIA_REG_TIMER_A_CONTROL:
         cia_timer_control_A(&_timer_A, val);
         /* TODO: Handle 6 & 7 */
         break;
