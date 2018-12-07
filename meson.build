@@ -5,6 +5,7 @@ src = [
     'cpu.c',
     'cpu_instr.c',
     'cpu_port.c',
+    'cia_timer.c',
     'cia1.c',
     'cia2.c',
     'vic.c',
