@@ -32,6 +32,15 @@ struct cia_timer {
     bool underflowed;
 };
 
+/* Control flags */
+#define CIA_TIMER_CTRL_START         0x01
+#define CIA_TIMER_CTRL_PORT_B_ON     0x02
+#define CIA_TIMER_CTRL_PORT_B_TOGGLE 0x04
+#define CIA_TIMER_CTRL_ONE_SHOT      0x08
+#define CIA_TIMER_CTRL_LOAD_LATCH    0x10
+/* Only timer A */
+#define CIA_TIMER_A_CTRL_INPUT_CNT   0x20
+
 void cia_timer_reset(struct cia_timer *timer);
 void cia_timer_set_latch_lo(struct cia_timer *timer, uint8_t lo);
 void cia_timer_set_latch_hi(struct cia_timer *timer, uint8_t hi);

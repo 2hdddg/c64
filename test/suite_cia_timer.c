@@ -100,7 +100,8 @@ int test_cycle_A_underflows_low()
     cia_timer_set_latch_lo(&_timer_A, 1);
     cia_timer_set_latch_hi(&_timer_A, 0);
     /* Start one-shot timer */
-    cia_timer_control_A(&_timer_A, 0x09);
+    cia_timer_control_A(&_timer_A,
+                        CIA_TIMER_CTRL_START|CIA_TIMER_CTRL_ONE_SHOT);
 
     if (!assert_not_underflowed(&_timer_A)) {
         return 0;
@@ -117,7 +118,8 @@ int test_one_shot_should_stop_timer_after_underflow()
     cia_timer_set_latch_lo(&_timer_A, 0);
     cia_timer_set_latch_hi(&_timer_A, 0);
     /* Start one-shot timer */
-    cia_timer_control_A(&_timer_A, 0x09);
+    cia_timer_control_A(&_timer_A,
+                        CIA_TIMER_CTRL_START|CIA_TIMER_CTRL_ONE_SHOT);
     if (!assert_started(&_timer_A)) {
         return 0;
     }
@@ -135,7 +137,7 @@ int test_continously_should_start_timer_after_underflow()
     cia_timer_set_latch_lo(&_timer_A, 1);
     cia_timer_set_latch_hi(&_timer_A, 0);
     /* Start continous timer */
-    cia_timer_control_A(&_timer_A, 0x01);
+    cia_timer_control_A(&_timer_A, CIA_TIMER_CTRL_START);
     if (!assert_started(&_timer_A)) {
         return 0;
     }
@@ -154,11 +156,32 @@ int test_should_not_count_cycle_when_input_is_pin_CNT()
     cia_timer_set_latch_lo(&_timer_A, 1);
     cia_timer_set_latch_hi(&_timer_A, 0);
     /* Start continous timer counting CNT pin */
-    cia_timer_control_A(&_timer_A, 0x21);
-
+    cia_timer_control_A(&_timer_A,
+                        CIA_TIMER_CTRL_START|CIA_TIMER_A_CTRL_INPUT_CNT);
     cia_timer_cycle(&_timer_A, &_timer_B);
 
     return assert_timer(&_timer_A, 1, 0);
 }
 
+int test_force_reload_latch()
+{
+    cia_timer_set_latch_lo(&_timer_A, 1);
+    cia_timer_set_latch_hi(&_timer_A, 0);
+    /* Start timer */
+    cia_timer_control_A(&_timer_A, CIA_TIMER_CTRL_START);
+    if (!assert_started(&_timer_A)) {
+        return 0;
+    }
+    /* Change latch and force it to be applied on timer on started
+     * timer */
+    cia_timer_set_latch_lo(&_timer_A, 10);
+    cia_timer_set_latch_hi(&_timer_A, 20);
+    cia_timer_control_A(&_timer_A,
+                        CIA_TIMER_CTRL_START|CIA_TIMER_CTRL_LOAD_LATCH);
+
+    if (!assert_timer(&_timer_A, 10, 20)) {
+        return 0;
+    }
+    return assert_started(&_timer_A);
+}
 

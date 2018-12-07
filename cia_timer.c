@@ -31,15 +31,15 @@ void cia_timer_set_latch_hi(struct cia_timer *timer, uint8_t hi)
 void cia_timer_control_A(struct cia_timer *timer,
                          uint8_t control)
 {
-    if (control & 0x10) {
+    if (control & CIA_TIMER_CTRL_LOAD_LATCH) {
         load_latch(timer);
     }
-    timer->started = (control & 0x01) > 0;
-    timer->port_B_on = (control & 0x02) > 0;
-    timer->port_B_toggle = (control & 0x04) > 0;
-    timer->one_shot = (control & 0x08) > 0;
-    timer->input = control & 0x20 ?  pin_CNT : clock_cycle;
-
+    timer->started       = (control & CIA_TIMER_CTRL_START) > 0;
+    timer->port_B_on     = (control & CIA_TIMER_CTRL_PORT_B_ON) > 0;
+    timer->port_B_toggle = (control & CIA_TIMER_CTRL_PORT_B_TOGGLE) > 0;
+    timer->one_shot      = (control & CIA_TIMER_CTRL_ONE_SHOT) > 0;
+    timer->input         = (control & CIA_TIMER_A_CTRL_INPUT_CNT) ?
+                            pin_CNT : clock_cycle;
     if (timer->started) {
         printf("Started %s timer: %02x%02x\n",
                timer->one_shot ? "one shot" : "continous",
