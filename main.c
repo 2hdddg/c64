@@ -59,13 +59,15 @@ int main(int argc, char **argv)
     printf("Powering on..\n");
     cpu_poweron();
 
-    int num = 1500000;
+    int num = 15000000;
     cpu_set_state(&state);
     while (num--) {
         /* Should happen at approx 1Mhz */
         cia1_cycle();
         cpu_step(&state);
     }
+    mem_dump_ram_as_text(STDOUT_FILENO, 0x0400, 40, 25);
+    //mem_dump_ram(STDOUT_FILENO, 0x0400, 40*25);
 
     //cpu_disassembly_at(STDOUT_FILENO, 0xff48, 10);
 

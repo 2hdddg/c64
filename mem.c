@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
+#include "petscii.h"
 #include "mem.h"
 
 uint8_t _ram[65536];
@@ -100,3 +102,29 @@ void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
     }
 }
 
+void mem_dump_ram(int fd, uint16_t addr, uint16_t num)
+{
+    char text[8];
+    for (int i = 0; i < num; i++) {
+        sprintf(text, "%02x ", _ram[addr + i]);
+        write(fd, text, 3);
+        if ((i + 1) % 40 == 0) {
+            write(fd, "\n", 1);
+        }
+    }
+    write(fd, "\n", 1);
+}
+
+void mem_dump_ram_as_text(int fd, uint16_t addr,
+                          uint8_t cols, uint8_t rows)
+{
+    char text[8];
+    for (int i = 0; i < cols*rows; i++) {
+        sprintf(text, "%c", ascii_screen[_ram[addr + i]]);
+        write(fd, text, 1);
+        if ((i + 1) % cols == 0) {
+            write(fd, "\n", 1);
+        }
+    }
+    write(fd, "\n", 1);
+}
