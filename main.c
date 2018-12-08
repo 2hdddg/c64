@@ -7,6 +7,7 @@
 #include "cpu_port.h"
 #include "pla.h"
 #include "cia1.h"
+#include "keyboard.h"
 
 uint8_t _basic_rom[8192];
 uint8_t _kernal_rom[8192];
@@ -58,6 +59,7 @@ int main(int argc, char **argv)
     cia1_reset();
     printf("Powering on..\n");
     cpu_poweron();
+    keyboard_reset();
 
     int num = 15000000;
     cpu_set_state(&state);
@@ -67,6 +69,15 @@ int main(int argc, char **argv)
         cpu_step(&state);
     }
     mem_dump_ram_as_text(STDOUT_FILENO, 0x0400, 40, 25);
+
+    num = 150000;
+    while (num--) {
+        /* Should happen at approx 1Mhz */
+        cia1_cycle();
+        cpu_step(&state);
+    }
+    mem_dump_ram_as_text(STDOUT_FILENO, 0x0400, 40, 25);
+
     //mem_dump_ram(STDOUT_FILENO, 0x0400, 40*25);
 
     //cpu_disassembly_at(STDOUT_FILENO, 0xff48, 10);

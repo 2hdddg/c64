@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "mem.h"
+#include "keyboard.h"
 
 /* MOS Complex interface adapter (CIA) 6526
  *

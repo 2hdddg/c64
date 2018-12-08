@@ -1,16 +1,18 @@
 project('c64', 'c')
 src = [
-    'main.c',
-    'mem.c',
     'cpu.c',
     'cpu_instr.c',
     'cpu_port.c',
     'cia_timer.c',
     'cia1.c',
     'cia2.c',
-    'vic.c',
+    'keyboard.c',
+    'main.c',
+    'mem.c',
+    'pla.c',
     'sid.c',
-    'pla.c']
+    'vic.c',
+]
 thread_dep = dependency('threads')
 executable('c64', src, dependencies: [thread_dep])
 
@@ -24,7 +26,9 @@ shared_library('suite_mem', [
 shared_library('suite_cpu_port', [
     'test/suite_cpu_port.c', 'cpu_port.c', 'mem.c'])
 shared_library('suite_cia1', [
-    'test/suite_cia1.c', 'cia1.c', 'cia_timer.c'])
+    'test/suite_cia1.c', 'cia1.c', 'keyboard.c', 'cia_timer.c'])
 shared_library('suite_cia_timer', [
     'test/suite_cia_timer.c', 'cia_timer.c'])
+shared_library('suite_keyboard', [
+    'test/suite_keyboard.c', 'keyboard.c'])
 

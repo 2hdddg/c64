@@ -242,7 +242,7 @@ static void interrupt_request()
 
     /* Retrieve handler at cpu hardwired address */
     read_address(ADDR_IRQ_VECTOR, &handler_address);
-    printf("Jumping to irq handler at %04x\n", handler_address);
+    //printf("Jumping to irq handler at %04x\n", handler_address);
     /* Point program counter to IRQ handler routine */
     _state.pc = handler_address;
 }
