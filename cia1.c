@@ -143,12 +143,12 @@ uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
     case CIA_REG_DATA_PORT_A:
         val = port_get(_data_direction_port_A, _data_port_A,
                        keyboard_get_port_A);
-        printf("Read CIA PORT A: %02x\n", val);
+        //printf("Read CIA PORT A: %02x\n", val);
         return val;
     case CIA_REG_DATA_PORT_B:
         val = port_get(_data_direction_port_B, _data_port_B,
                        keyboard_get_port_B);
-        printf("Read CIA PORT B: %02x\n", val);
+        //printf("Read CIA PORT B: %02x\n", val);
         return val;
     case CIA_REG_DATA_DIRECTION_PORT_A:
         return _data_direction_port_A;
@@ -209,7 +209,7 @@ void cia1_mem_set(uint8_t val, uint16_t absolute,
         break;
     case CIA_REG_INTERRUPT_CONTROL:
         control_interrupts(val);
-        printf("Changed interrupt mask to %02x\n", _interrupt_mask);
+        //printf("Changed interrupt mask to %02x\n", _interrupt_mask);
         break;
     case CIA_REG_TIMER_A_CONTROL:
         cia_timer_control_A(&_timer_A, val);

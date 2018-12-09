@@ -60,12 +60,21 @@ int main(int argc, char **argv)
     printf("Powering on..\n");
     cpu_poweron();
     keyboard_reset();
+    keyboard_trace_keys(STDOUT_FILENO);
+    keyboard_trace_port_set(STDOUT_FILENO);
+    keyboard_trace_port_get(STDOUT_FILENO);
 
     int num = 15000000;
     cpu_set_state(&state);
     while (num--) {
         /* Should happen at approx 1Mhz */
         cia1_cycle();
+        if (num == 10000) {
+            keyboard_down(KEY_S);
+        }
+        if (num == 7000) {
+            keyboard_up(KEY_S);
+        }
         cpu_step(&state);
     }
     mem_dump_ram_as_text(STDOUT_FILENO, 0x0400, 40, 25);

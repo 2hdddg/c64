@@ -37,3 +37,8 @@ uint8_t keyboard_get_port_B();
 
 void keyboard_set_port_A(uint8_t lines);
 void keyboard_set_port_B(uint8_t lines);
+
+void keyboard_trace_keys(int fd);
+void keyboard_trace_port_set(int fd);
+void keyboard_trace_port_get(int fd);
+
