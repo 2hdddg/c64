@@ -60,9 +60,11 @@ int main(int argc, char **argv)
     printf("Powering on..\n");
     cpu_poweron();
     keyboard_reset();
+    /*
     keyboard_trace_keys(STDOUT_FILENO);
     keyboard_trace_port_set(STDOUT_FILENO);
     keyboard_trace_port_get(STDOUT_FILENO);
+    */
 
     int num = 15000000;
     cpu_set_state(&state);

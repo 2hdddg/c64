@@ -58,3 +58,43 @@ int test_can_get_multiple_keys_on_same_line()
     }
     return 1;
 }
+
+int test_disabling_all_lines_gives_no_key()
+{
+    /* Push down key S. S is on line 1 */
+    keyboard_down(KEY_S);
+    /* Setup to read no lines */
+    keyboard_set_port_A(0xff);
+    _line = keyboard_get_port_B();
+    if (_line != 0xff) {
+        printf("Expected no key\n");
+        return 0;
+    }
+    return 1;
+}
+
+int test_enabling_all_lines_indicates_a_key()
+{
+    /* Push down key S. S is on line 1 */
+    keyboard_down(KEY_S);
+    /* Setup to read all lines */
+    keyboard_set_port_A(0x00);
+    _line = keyboard_get_port_B();
+    if (_line == 0xff) {
+        printf("Expected a key\n");
+        return 0;
+    }
+    return 1;
+}
+
+int test_enabling_all_lines_indicates_no_key()
+{
+    /* Setup to read all lines */
+    keyboard_set_port_A(0x00);
+    _line = keyboard_get_port_B();
+    if (_line != 0xff) {
+        printf("Expected no key\n");
+        return 0;
+    }
+    return 1;
+}
