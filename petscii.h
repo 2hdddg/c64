@@ -1,3 +1,4 @@
+#pragma once
 
 char ascii_screen[] = {
     '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',

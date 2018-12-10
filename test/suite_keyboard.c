@@ -15,7 +15,7 @@ int test_can_get_S()
 {
 
     /* Push down key S. S is on line 1 */
-    keyboard_down(KEY_S);
+    keyboard_down(KEYB_S);
     /* Try to read line 0, should be no keys pressed */
     keyboard_set_port_A(0xfe);
     _line = keyboard_get_port_B();
@@ -31,7 +31,7 @@ int test_can_get_S()
         return 0;
     }
     /* Release key */
-    keyboard_up(KEY_S);
+    keyboard_up(KEYB_S);
     /* Read line 1 again */
     _line = keyboard_get_port_B();
     if (_line != 0xff) {
@@ -45,8 +45,8 @@ int test_can_get_S()
 int test_can_get_multiple_keys_on_same_line()
 {
     /* Push down two keys on line 1 */
-    keyboard_down(KEY_A);
-    keyboard_down(KEY_LEFT_SHIFT);
+    keyboard_down(KEYB_A);
+    keyboard_down(KEYB_LEFT_SHIFT);
 
     /* Now read line 1 */
     keyboard_set_port_A(0xfd);
@@ -62,7 +62,7 @@ int test_can_get_multiple_keys_on_same_line()
 int test_disabling_all_lines_gives_no_key()
 {
     /* Push down key S. S is on line 1 */
-    keyboard_down(KEY_S);
+    keyboard_down(KEYB_S);
     /* Setup to read no lines */
     keyboard_set_port_A(0xff);
     _line = keyboard_get_port_B();
@@ -76,7 +76,7 @@ int test_disabling_all_lines_gives_no_key()
 int test_enabling_all_lines_indicates_a_key()
 {
     /* Push down key S. S is on line 1 */
-    keyboard_down(KEY_S);
+    keyboard_down(KEYB_S);
     /* Setup to read all lines */
     keyboard_set_port_A(0x00);
     _line = keyboard_get_port_B();

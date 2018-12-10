@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "petscii.h"
+//#include "petscii.h"
 #include "mem.h"
 
 uint8_t _ram[65536];
@@ -114,7 +114,7 @@ void mem_dump_ram(int fd, uint16_t addr, uint16_t num)
     }
     write(fd, "\n", 1);
 }
-
+#if 0
 void mem_dump_ram_as_text(int fd, uint16_t addr,
                           uint8_t cols, uint8_t rows)
 {
@@ -127,4 +127,12 @@ void mem_dump_ram_as_text(int fd, uint16_t addr,
         }
     }
     write(fd, "\n", 1);
+}
+#endif
+
+void mem_get_ram(uint16_t addr, uint16_t num, uint8_t *out)
+{
+    for (int i = 0; i < num; i++) {
+        *out++ = _ram[addr + i];
+    }
 }

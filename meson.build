@@ -13,8 +13,8 @@ src = [
     'sid.c',
     'vic.c',
 ]
-thread_dep = dependency('threads')
-executable('c64', src, dependencies: [thread_dep])
+
+executable('c64', src, dependencies: [], link_args: '-lncurses')
 
 # Test suites
 shared_library('suite_cpu', [
