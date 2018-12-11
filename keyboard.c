@@ -11,9 +11,9 @@ uint8_t _lines[8];
 uint8_t _data_port_A;
 
 /* Debugging */
-struct trace_point *_trace_key;
-struct trace_point *_trace_set_port;
-struct trace_point *_trace_get_port;
+static struct trace_point *_trace_key      = NULL;
+static struct trace_point *_trace_set_port = NULL;
+static struct trace_point *_trace_get_port = NULL;
 
 
 static int line_from_key(uint16_t key)

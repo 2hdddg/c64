@@ -5,8 +5,8 @@
 #include "trace.h"
 #include "vic.h"
 
-struct trace_point *_trace_set_reg;
-struct trace_point *_trace_get_reg;
+static struct trace_point *_trace_set_reg = NULL;
+static struct trace_point *_trace_get_reg = NULL;
 
 void vic_init()
 {

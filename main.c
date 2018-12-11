@@ -101,12 +101,13 @@ int main(int argc, char **argv)
     }
 /*
     trace_enable_point("VIC", "set reg", log_fd);
-    trace_enable_point("KBD", "key", log_fd);
     trace_enable_point("KBD", "set port", log_fd);
     trace_enable_point("KBD", "get port", log_fd);
 */
+    trace_enable_point("KBD", "key", log_fd);
+    trace_enable_point("CIA1", "error", log_fd);
 
-    if (!argc)
+    if (argc)
         run_ncurses(&state);
     else
         just_run(&state);

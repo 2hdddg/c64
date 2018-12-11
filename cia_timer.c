@@ -47,7 +47,6 @@ void cia_timer_control_A(struct cia_timer *timer,
     }
 }
 
-/* Returns true if underflowed */
 void cia_timer_cycle(struct cia_timer *timer_A,
                      struct cia_timer *timer_B)
 {
