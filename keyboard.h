@@ -92,6 +92,7 @@
 #define KEYB_FORWARD_SLASH   0x067f
 #define KEYB_STOP            0x077f
 
+void keyboard_init();
 void keyboard_reset();
 void keyboard_down(uint16_t key);
 void keyboard_up(uint16_t key);

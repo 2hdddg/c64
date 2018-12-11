@@ -11,7 +11,9 @@ src = [
     'mem.c',
     'pla.c',
     'sid.c',
+    'trace.c',
     'vic.c',
+    'main_ncurses.c',
 ]
 
 executable('c64', src, dependencies: [], link_args: '-lncurses')
@@ -26,9 +28,10 @@ shared_library('suite_mem', [
 shared_library('suite_cpu_port', [
     'test/suite_cpu_port.c', 'cpu_port.c', 'mem.c'])
 shared_library('suite_cia1', [
-    'test/suite_cia1.c', 'cia1.c', 'keyboard.c', 'cia_timer.c'])
+    'test/suite_cia1.c', 'cia1.c', 'keyboard.c',
+    'cia_timer.c', 'trace.c'])
 shared_library('suite_cia_timer', [
     'test/suite_cia_timer.c', 'cia_timer.c'])
 shared_library('suite_keyboard', [
-    'test/suite_keyboard.c', 'keyboard.c'])
+    'test/suite_keyboard.c', 'keyboard.c', 'trace.c'])
 

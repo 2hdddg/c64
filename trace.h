@@ -1,0 +1,31 @@
+#include <stdbool.h>
+
+
+#define TRACE(point, format, args...)           \
+    if (point->fd != -1) {                      \
+        char trace_buf[50];                     \
+        int  len;                               \
+        len = sprintf(trace_buf,                \
+                      "%s,%s: ",                \
+                      point->sys, point->name); \
+        write(point->fd, trace_buf, len);       \
+        len = sprintf(trace_buf, format, args); \
+        write(point->fd, trace_buf, len);       \
+        write(point->fd, "\n", 1);              \
+    }
+
+
+struct trace_point {
+    const char *sys;
+    const char *name;
+    int        fd;
+};
+
+void trace_init();
+
+struct trace_point* trace_add_point(const char *sys,
+                                    const char *name);
+bool trace_enable_point(const char *sys,
+                        const char *name,
+                        int fd);
+

@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "trace.h"
 #include "keyboard.h"
 
 
@@ -10,10 +11,10 @@ uint8_t _lines[8];
 uint8_t _data_port_A;
 
 /* Debugging */
-int     _trace_keys;
-int     _trace_port_set;
-int     _trace_port_get;
-char    _trace_buffer[100];
+struct trace_point *_trace_key;
+struct trace_point *_trace_set_port;
+struct trace_point *_trace_get_port;
+
 
 static int line_from_key(uint16_t key)
 {
@@ -27,17 +28,20 @@ static uint8_t key_from_key(uint16_t key)
     return (uint8_t)key;
 }
 
+void keyboard_init()
+{
+    _trace_key = trace_add_point("KBD", "key");
+    _trace_set_port = trace_add_point("KBD", "set port");
+    _trace_get_port = trace_add_point("KBD", "get port");
+}
+
 void keyboard_reset()
 {
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 8; i++) {
         /* Set to no key */
         _lines[i] = 0xff;
     }
     _data_port_A = 0;
-    /* Debug stuff */
-    _trace_keys = -1;
-    _trace_port_set = -1;
-    _trace_port_get = -1;
 }
 
 void keyboard_down(uint16_t key)
@@ -48,11 +52,7 @@ void keyboard_down(uint16_t key)
     key  = key_from_key(key);
     _lines[line] &= key;
 
-    if (_trace_keys != -1) {
-        sprintf(_trace_buffer,
-                "KBD: Key down, line %02x, key %02x\n", line, key);
-        write(_trace_keys, _trace_buffer, strlen(_trace_buffer));
-    }
+    TRACE(_trace_key, "%02x down on line %02x", key, line);
 }
 
 void keyboard_up(uint16_t key)
@@ -63,15 +63,12 @@ void keyboard_up(uint16_t key)
     key  = key_from_key(key);
     _lines[line] |= ~key;
 
-    if (_trace_keys != -1) {
-        sprintf(_trace_buffer,
-                "KBD: Key up, line %02x, key %02x\n", line, key);
-        write(_trace_keys, _trace_buffer, strlen(_trace_buffer));
-    }
+    TRACE(_trace_key, "%02x up on line %02x", key, line);
 }
 
 uint8_t keyboard_get_port_A()
 {
+    TRACE(_trace_get_port, "A: %02x", _data_port_A);
     return _data_port_A;
 }
 
@@ -94,47 +91,18 @@ uint8_t keyboard_get_port_B()
     /* Should be zero for pressed key */
     keys = ~keys;
 
-    if (_trace_port_get != -1) {
-        sprintf(_trace_buffer,
-                "KBD: Get port B: %02x\n", keys);
-        write(_trace_port_get, _trace_buffer, strlen(_trace_buffer));
-    }
-
+    TRACE(_trace_get_port, "B: %02x", keys);
     return keys;
 }
 
 void keyboard_set_port_A(uint8_t data)
 {
     _data_port_A = data;
-    if (_trace_port_set != -1) {
-        sprintf(_trace_buffer,
-                "KBD: Setting port A to: %02x\n", data);
-        write(_trace_port_set, _trace_buffer, strlen(_trace_buffer));
-    }
+    TRACE(_trace_set_port, "A: %02x", data);
 }
 
 void keyboard_set_port_B(uint8_t data)
 {
     /* Does nothing here! What should happen? */
-    if (_trace_port_set != -1) {
-        sprintf(_trace_buffer,
-                "KBD: Setting port B to: %02x\n", data);
-        write(_trace_port_set, _trace_buffer, strlen(_trace_buffer));
-    }
+    TRACE(_trace_set_port, "B: %02x", data);
 }
-
-void keyboard_trace_keys(int fd)
-{
-    _trace_keys = fd;
-}
-
-void keyboard_trace_port_set(int fd)
-{
-    _trace_port_set = fd;
-}
-
-void keyboard_trace_port_get(int fd)
-{
-    _trace_port_get = fd;
-}
-

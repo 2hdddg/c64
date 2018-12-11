@@ -6,6 +6,7 @@ uint8_t _line;
 
 int each_before()
 {
+    keyboard_init();
     keyboard_reset();
     _line = 0xff;
     return 1;
