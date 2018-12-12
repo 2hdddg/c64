@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "trace.h"
+
 /* Kind of input that decrements timer. */
 typedef enum {
     clock_cycle,
@@ -30,6 +32,9 @@ struct cia_timer {
 
     /* True if last cycle caused underflow */
     bool underflowed;
+
+    /* Debugging */
+    struct trace_point *trace;
 };
 
 /* Control flags */

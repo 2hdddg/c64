@@ -41,9 +41,9 @@ void cia_timer_control_A(struct cia_timer *timer,
     timer->input         = (control & CIA_TIMER_A_CTRL_INPUT_CNT) ?
                             pin_CNT : clock_cycle;
     if (timer->started) {
-        printf("Started %s timer: %02x%02x\n",
-               timer->one_shot ? "one shot" : "continous",
-               timer->timer_hi, timer->timer_lo);
+        TRACE(timer->trace, "A: started %02x%03x, %s",
+              timer->timer_hi, timer->timer_lo,
+              timer->one_shot ? "one shot" : "continous");
     }
 }
 

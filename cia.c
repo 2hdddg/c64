@@ -74,7 +74,9 @@ static void port_set(uint8_t directions, uint8_t data,
 void cia_reset(struct cia_state *state)
 {
     cia_timer_reset(&state->timer_A);
+    state->timer_A.trace = state->trace_timer;
     cia_timer_reset(&state->timer_B);
+    state->timer_B.trace = state->trace_timer;
     state->interrupt_data = 0x00;
     state->interrupt_mask = 0x00;
     state->data_direction_port_A = 0;
@@ -140,7 +142,6 @@ void cia_set_register(struct cia_state *state,
         break;
     case CIA_REG_INTERRUPT_CONTROL:
         control_interrupts(state, val);
-        //printf("Changed interrupt mask to %02x\n", _interrupt_mask);
         break;
     case CIA_REG_TIMER_A_CONTROL:
         cia_timer_control_A(&state->timer_A, val);
@@ -177,7 +178,6 @@ uint8_t cia_get_register(struct cia_state *state,
     case CIA_REG_TIMER_A_HI:
         return state->timer_A.timer_hi;
     case CIA_REG_INTERRUPT_CONTROL:
-        //printf("Reading & clearing interrupt status\n");
         val = state->interrupt_data;
         /* Cleared on read */
         state->interrupt_data = 0x00;

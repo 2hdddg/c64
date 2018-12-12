@@ -7,22 +7,24 @@
 
 static struct trace_point *_trace_set_reg = NULL;
 static struct trace_point *_trace_get_reg = NULL;
+static struct trace_point *_trace_error   = NULL;
 
 void vic_init()
 {
     _trace_set_reg = trace_add_point("VIC", "set reg");
     _trace_get_reg = trace_add_point("VIC", "get reg");
+    _trace_error = trace_add_point("SID", "ERROR");
 }
 
 uint8_t vic_mem_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
-    TRACE(_trace_get_reg, "%04x", absolute);
+    TRACE(_trace_error, "get reg %04x not handled", absolute);
     return 0;
 }
 
 void vic_mem_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
-    TRACE(_trace_set_reg, "%04x to %02x", absolute, val);
+    TRACE(_trace_error, "set reg %04x not handled", absolute);
 }

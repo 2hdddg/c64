@@ -13,6 +13,7 @@
 #include "cia1.h"
 #include "keyboard.h"
 #include "vic.h"
+#include "sid.h"
 
 uint8_t _basic_rom[8192];
 uint8_t _kernal_rom[8192];
@@ -54,6 +55,7 @@ int setup(struct cpu_state *state)
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
     pla_trace_banks(STDOUT_FILENO);
     keyboard_init();
+    sid_init();
 
     cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu);
