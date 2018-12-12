@@ -4,9 +4,14 @@
 
 uint8_t _line;
 
-int each_before()
+int once_before()
 {
     keyboard_init();
+    return 0;
+}
+
+int each_before()
+{
     keyboard_reset();
     _line = 0xff;
     return 1;

@@ -32,9 +32,14 @@ int assert_interrupt_status(int expected, int actual)
     return 1;
 }
 
-int each_before()
+int once_before()
 {
     cia1_init();
+    return 0;
+}
+
+int each_before()
+{
     cia1_reset();
     _num_interrupt_requests = 0;
 
