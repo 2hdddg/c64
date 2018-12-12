@@ -183,7 +183,8 @@ static void draw_screen(uint8_t *screen)
     for (int y = 0; y < 25; y++) {
         mvaddch(y, 0, ' ');
         for (int x = 0; x < 40; x++) {
-            addch(ascii_screen[*screen]);
+            uint8_t c = *screen;
+            addch(ascii_screen[c] | (c >= 0x80 ? A_REVERSE : 0));
             screen++;
         }
     }
@@ -206,6 +207,10 @@ static void run_c64_loop(struct cpu_state *state)
 
         ch = getch();
         if (ch == KEY_F(2)) {
+            break;
+        }
+        /* ESCAPE, works when keypad support disabled */
+        if (ch == 27) {
             break;
         }
 
@@ -237,15 +242,38 @@ static void run_c64_loop(struct cpu_state *state)
     }
 }
 
+void run_menu_loop(bool *exit)
+{
+    int ch = 0;
+    while (true) {
+        ch = getch();
+        switch (ch) {
+        case 27:
+            /* Escape go back to C64 */
+            return;
+        case 'q':
+        case 'Q':
+            *exit = true;
+            return;
+        default:
+            continue;
+        }
+    }
+}
+
 int run_ncurses(struct cpu_state *state)
 {
     WINDOW *win = initscr();
     raw();
     noecho();
-    keypad(stdscr, TRUE);
-
+    //keypad(stdscr, TRUE);
     nodelay(win, TRUE);
-    run_c64_loop(state);
+    bool exit = false;
+
+    while (!exit) {
+        run_c64_loop(state);
+        run_menu_loop(&exit);
+    }
 
     endwin();
 
