@@ -3,6 +3,7 @@ src = [
     'cpu.c',
     'cpu_instr.c',
     'cpu_port.c',
+    'cia.c',
     'cia_timer.c',
     'cia1.c',
     'cia2.c',
@@ -28,7 +29,7 @@ shared_library('suite_mem', [
 shared_library('suite_cpu_port', [
     'test/suite_cpu_port.c', 'cpu_port.c', 'mem.c'])
 shared_library('suite_cia1', [
-    'test/suite_cia1.c', 'cia1.c', 'keyboard.c',
+    'test/suite_cia1.c', 'cia1.c', 'cia.c', 'keyboard.c',
     'cia_timer.c', 'trace.c'])
 shared_library('suite_cia_timer', [
     'test/suite_cia_timer.c', 'cia_timer.c'])

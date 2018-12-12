@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "cpu.h"
 #include "cia1.h"
+#include "mem.h"
 
 static uint16_t map_key(int ch, uint16_t *extra)
 {

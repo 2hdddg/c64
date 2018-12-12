@@ -50,20 +50,20 @@ int setup(struct cpu_state *state)
         return -1;
     }
 
-    state->pc = 0xfce2;
     mem_init();
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
     pla_trace_banks(STDOUT_FILENO);
-    cia1_init();
     keyboard_init();
 
     cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu, -1);
     mem_reset();
+    cia1_init();
     cia1_reset();
     printf("Powering on..\n");
     cpu_poweron();
     keyboard_reset();
+    state->pc = 0xfce2;
     cpu_set_state(state);
     /*
     keyboard_trace_keys(STDOUT_FILENO);
@@ -81,11 +81,12 @@ int run_ncurses(struct cpu_state *state);
 
 void just_run(struct cpu_state *state)
 {
-    int num = 15000000;
+    //int num = 15000000;
+    int num = 15;
     while (num--) {
         /* Should happen at approx 1Mhz */
-        cia1_cycle();
         cpu_step(state);
+        cia1_cycle();
     }
 }
 
@@ -95,17 +96,24 @@ int main(int argc, char **argv)
 
     trace_init();
     log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY);
+    int the_log = STDOUT_FILENO;
 
     if (setup(&state) != 0) {
         return -1;
     }
-/*
-    trace_enable_point("VIC", "set reg", log_fd);
-    trace_enable_point("KBD", "set port", log_fd);
-    trace_enable_point("KBD", "get port", log_fd);
-*/
-    trace_enable_point("KBD", "key", log_fd);
-    trace_enable_point("CIA1", "error", log_fd);
+
+    if (argc) {
+        the_log = log_fd;
+    }
+
+    trace_enable_point("VIC", "set reg", the_log);
+    trace_enable_point("KBD", "set port", the_log);
+    trace_enable_point("KBD", "get port", the_log);
+    trace_enable_point("KBD", "key", the_log);
+    trace_enable_point("CIA1", "ERROR", the_log);
+    trace_enable_point("CIA1", "set port", the_log);
+    trace_enable_point("CIA1", "get port", the_log);
+    trace_enable_point("CIA1", "timer", the_log);
 
     if (argc)
         run_ncurses(&state);

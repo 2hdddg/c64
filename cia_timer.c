@@ -12,7 +12,7 @@ static void load_latch(struct cia_timer *timer)
 
 void cia_timer_reset(struct cia_timer *timer)
 {
-    memset(&timer, 0, sizeof(*timer));
+    memset(timer, 0, sizeof(*timer));
 }
 
 void cia_timer_set_latch_lo(struct cia_timer *timer, uint8_t lo)
