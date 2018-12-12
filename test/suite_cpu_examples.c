@@ -23,12 +23,16 @@ uint8_t mem_get(uint16_t addr)
     return _ram[addr];
 }
 
+int once_before()
+{
+    cpu_init(mem_get, mem_set);
+    return 0;
+}
+
 int each_before()
 {
     memset(_ram, 0, RAM_SIZE);
-    memset(&_state, 0, sizeof(_state));
-    cpu_init(mem_get, mem_set, STDOUT_FILENO);
-
+    cpu_reset();
     return 0;
 }
 

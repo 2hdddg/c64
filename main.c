@@ -56,7 +56,7 @@ int setup(struct cpu_state *state)
     keyboard_init();
 
     cpu_port_init();
-    cpu_init(mem_get_for_cpu, mem_set_for_cpu, -1);
+    cpu_init(mem_get_for_cpu, mem_set_for_cpu);
     mem_reset();
     cia1_init();
     cia1_reset();
@@ -65,15 +65,8 @@ int setup(struct cpu_state *state)
     keyboard_reset();
     state->pc = 0xfce2;
     cpu_set_state(state);
-    /*
-    keyboard_trace_keys(STDOUT_FILENO);
-    keyboard_trace_port_set(STDOUT_FILENO);
-    keyboard_trace_port_get(STDOUT_FILENO);
-    */
 
     vic_init();
-    //vic_trace_register_set(log_fd);
-    //vic_trace_register_get(log_fd);
     return 0;
 }
 
@@ -102,11 +95,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if (argc) {
+    if (!argc) {
         the_log = log_fd;
     }
-
     trace_enable_point("VIC", "set reg", the_log);
+/*
     trace_enable_point("KBD", "set port", the_log);
     trace_enable_point("KBD", "get port", the_log);
     trace_enable_point("KBD", "key", the_log);
@@ -114,6 +107,8 @@ int main(int argc, char **argv)
     trace_enable_point("CIA1", "set port", the_log);
     trace_enable_point("CIA1", "get port", the_log);
     trace_enable_point("CIA1", "timer", the_log);
+    trace_enable_point("CPU", "execution", the_log);
+*/
 
     if (argc)
         run_ncurses(&state);

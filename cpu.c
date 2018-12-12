@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "trace.h"
 #include "cpu_ops.h"
 #include "cpu.h"
 #include "cpu_instr.h"
@@ -17,20 +18,20 @@
 #define ADDR_IRQ_VECTOR     0xfffe
 
 /* Memory access */
-cpu_mem_get _mem_get;
-cpu_mem_set _mem_set;
+static cpu_mem_get _mem_get;
+static cpu_mem_set _mem_set;
 
 /* Actual registers and status */
-struct cpu_state _state;
+static struct cpu_state _state;
 
 /* Interrupt handling */
-bool             _irq_pending;
+static bool _irq_pending;
 
 /* For debugging */
-int              _trace_fd;
-bool             _stack_overflow;
-bool             _stack_underflow;
-struct cpu_state _state_before;
+static bool               _stack_overflow;
+static bool               _stack_underflow;
+static struct cpu_state   _state_before;
+static struct trace_point *_trace_execution;
 
 struct instruction {
     const struct operation *operation;
@@ -848,7 +849,7 @@ static int execute(struct instruction *instr)
     }
 
     /* Writes instruction and registers to debug fd */
-    trace_execution(_trace_fd, instr,
+    trace_execution(_trace_execution->fd, instr,
                     &_state_before, &_state);
 
     return 0;
@@ -915,12 +916,18 @@ static int fetch_and_decode(struct instruction *instr)
 }
 
 void cpu_init(cpu_mem_get mem_get,
-              cpu_mem_set mem_set,
-              int trace_fd)
+              cpu_mem_set mem_set)
 {
     _mem_get = mem_get;
     _mem_set = mem_set;
-    _trace_fd = trace_fd;
+    cpu_reset();
+
+    /* Debugging */
+    _trace_execution = trace_add_point("CPU", "execution");
+}
+
+void cpu_reset()
+{
     memset(&_state, 0, sizeof(_state));
     _irq_pending = false;
     _stack_overflow = false;

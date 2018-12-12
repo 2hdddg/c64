@@ -21,9 +21,9 @@ executable('c64', src, dependencies: [], link_args: '-lncurses')
 
 # Test suites
 shared_library('suite_cpu', [
-    'test/suite_cpu.c', 'cpu.c', 'cpu_instr.c'])
+    'test/suite_cpu.c', 'cpu.c', 'cpu_instr.c', 'trace.c'])
 shared_library('suite_cpu_examples', [
-    'test/suite_cpu_examples.c', 'cpu.c', 'cpu_instr.c'])
+    'test/suite_cpu_examples.c', 'cpu.c', 'cpu_instr.c', 'trace.c'])
 shared_library('suite_mem', [
     'test/suite_mem.c', 'mem.c'])
 shared_library('suite_cpu_port', [

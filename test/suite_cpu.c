@@ -81,13 +81,17 @@ static void set_known_mem_values()
     _ram[0x0180] = FLAG_DECIMAL_MODE|FLAG_BRK;
 }
 
+int once_before()
+{
+    cpu_init(mem_get, mem_set);
+    return 0;
+}
+
 int each_before()
 {
     memset(_ram, 0, RAM_SIZE);
-    memset(&_state, 0, sizeof(_state));
-
+    cpu_reset();
     set_known_mem_values();
-    cpu_init(mem_get, mem_set, STDOUT_FILENO);
 
     return 0;
 }

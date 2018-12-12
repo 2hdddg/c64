@@ -27,8 +27,8 @@ typedef uint8_t (*cpu_mem_get)(uint16_t addr);
 typedef void (*cpu_mem_set)(uint16_t addr, uint8_t val);
 
 void cpu_init(cpu_mem_get mem_get,
-              cpu_mem_set mem_set,
-              int trace_fd);
+              cpu_mem_set mem_set);
+void cpu_reset();
 
 void cpu_poweron();
 void cpu_step(struct cpu_state *state_out);

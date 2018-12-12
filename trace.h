@@ -9,7 +9,7 @@
         char trace_buf[50];                     \
         int  len;                               \
         len = sprintf(trace_buf,                \
-                      "%s,%s: ",                \
+                      "%s %s: ",                \
                       point->sys, point->name); \
         write(point->fd, trace_buf, len);       \
         len = sprintf(trace_buf, format, args); \
@@ -22,7 +22,7 @@
         char trace_buf[50];                     \
         int  len;                               \
         len = sprintf(trace_buf,                \
-                      "%s,%s: ",                \
+                      "%s %s: ",                \
                       point->sys, point->name); \
         write(point->fd, trace_buf, len);       \
         write(point->fd, text, strlen(text));   \
@@ -34,7 +34,7 @@
         char trace_buf[50];                         \
         int  len;                                   \
         len = sprintf(trace_buf,                    \
-                      "%s,%s: ",                    \
+                      "%s %s: ",                    \
                       point->sys, point->name);     \
         write(point->fd, trace_buf, len);           \
         write(point->fd, feature, strlen(feature)); \
