@@ -89,15 +89,12 @@ int main(int argc, char **argv)
 
     trace_init();
     log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY);
-    int the_log = STDOUT_FILENO;
+    int the_log = log_fd;
 
     if (setup(&state) != 0) {
         return -1;
     }
 
-    if (!argc) {
-        the_log = log_fd;
-    }
     trace_enable_point("VIC", "set reg", the_log);
 /*
     trace_enable_point("KBD", "set port", the_log);

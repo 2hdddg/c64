@@ -36,7 +36,5 @@ void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
                                int num_install);
 
 void mem_dump_ram(int fd, uint16_t addr, uint16_t num);
-void mem_dump_ram_as_text(int fd, uint16_t addr,
-                          uint8_t cols, uint8_t rows);
-void mem_get_ram(uint16_t addr, uint16_t num, uint8_t *out);
+uint8_t* mem_get_ram(uint16_t addr);
 

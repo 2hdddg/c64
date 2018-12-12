@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-//#include "petscii.h"
 #include "mem.h"
 
 uint8_t _ram[65536];
@@ -29,34 +28,6 @@ void mem_init()
 void mem_reset()
 {
     memset(_ram, 0, 0xffff);
-
-    //_ram[0] = 0xef;
-    //_ram[1] = 0x37;
-    /* Points to IRQ handler */
-/*
-    _ram[0xfffe] = 0x48;
-    _ram[0xffff] = 0xff;
-*/
-
-    /* ROM IRQ service routine */
-/*
-    _ram[0xff48] = 0x48;
-    _ram[0xff49] = 0x8a;
-    _ram[0xff4a] = 0x48;
-    _ram[0xff4b] = 0x98;
-    _ram[0xff4c] = 0x48;
-    _ram[0xff4d] = 0xba;
-    _ram[0xff4e] = 0xbd;
-    _ram[0xff4f] = 0x04;
-    _ram[0xff50] = 0x01;
-    _ram[0xff51] = 0x29;
-    _ram[0xff52] = 0x10;
-    _ram[0xff53] = 0xf0;
-    _ram[0xff54] = 0x03;
-    _ram[0xff55] = 0x6c;
-    _ram[0xff56] = 0x16;
-    _ram[0xff57] = 0x03;
-*/
 }
 
 void mem_set_for_cpu(uint16_t addr, uint8_t val)
@@ -114,25 +85,8 @@ void mem_dump_ram(int fd, uint16_t addr, uint16_t num)
     }
     write(fd, "\n", 1);
 }
-#if 0
-void mem_dump_ram_as_text(int fd, uint16_t addr,
-                          uint8_t cols, uint8_t rows)
-{
-    char text[8];
-    for (int i = 0; i < cols*rows; i++) {
-        sprintf(text, "%c", ascii_screen[_ram[addr + i]]);
-        write(fd, text, 1);
-        if ((i + 1) % cols == 0) {
-            write(fd, "\n", 1);
-        }
-    }
-    write(fd, "\n", 1);
-}
-#endif
 
-void mem_get_ram(uint16_t addr, uint16_t num, uint8_t *out)
+uint8_t* mem_get_ram(uint16_t addr)
 {
-    for (int i = 0; i < num; i++) {
-        *out++ = _ram[addr + i];
-    }
+    return &_ram[addr];
 }

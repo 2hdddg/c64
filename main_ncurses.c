@@ -178,22 +178,26 @@ static uint16_t map_key(int ch, uint16_t *extra)
     }
 }
 
-int run_ncurses(struct cpu_state *state)
+static void draw_screen(uint8_t *screen)
+{
+    for (int y = 0; y < 25; y++) {
+        mvaddch(y, 0, ' ');
+        for (int x = 0; x < 40; x++) {
+            addch(ascii_screen[*screen]);
+            screen++;
+        }
+    }
+    refresh();
+}
+
+static void run_c64_loop(struct cpu_state *state)
 {
     struct timespec start, stop;
-
-    WINDOW *win = initscr();
-    raw();
-    noecho();
-    keypad(stdscr, TRUE);
-    int ch;
-    uint8_t screen_ram[25*40];
-
     int num_key_downs = 0;
     uint16_t key = 0;
     uint16_t extra_key = 0;
+    int ch;
 
-    nodelay(win, TRUE);
     while (true) {
         clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -228,19 +232,20 @@ int run_ncurses(struct cpu_state *state)
         clock_gettime(CLOCK_MONOTONIC, &stop);
         if ((stop.tv_nsec - start.tv_nsec) > 100*25) {
             start = stop;
-            mem_get_ram(0x0400, 25*40, screen_ram);
-            uint8_t *n = screen_ram;
-            for (int y = 0; y < 25; y++) {
-                mvaddch(y, 0, ' ');
-                for (int x = 0; x < 40; x++) {
-                    addch(ascii_screen[*n]);
-                    n++;
-                }
-            }
-            refresh();
+            draw_screen(mem_get_ram(0x0400));
         }
-
     }
+}
+
+int run_ncurses(struct cpu_state *state)
+{
+    WINDOW *win = initscr();
+    raw();
+    noecho();
+    keypad(stdscr, TRUE);
+
+    nodelay(win, TRUE);
+    run_c64_loop(state);
 
     endwin();
 
