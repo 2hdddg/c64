@@ -63,6 +63,7 @@ int setup(struct cpu_state *state)
     cia1_init();
     cia2_init();
     cia1_reset();
+    cia2_reset();
     printf("Powering on..\n");
     cpu_poweron();
     keyboard_reset();
@@ -100,7 +101,11 @@ int main(int argc, char **argv)
 
     trace_enable_point("VIC", "set reg", the_log);
     trace_enable_point("CIA1", "ERROR", the_log);
+    trace_enable_point("CIA1", "timer", the_log);
     trace_enable_point("CIA2", "ERROR", the_log);
+    trace_enable_point("CIA2", "timer", the_log);
+    trace_enable_point("CIA2", "set port", the_log);
+    trace_enable_point("CIA2", "get port", the_log);
     trace_enable_point("PLA", "banks", the_log);
 /*
     trace_enable_point("KBD", "set port", the_log);

@@ -52,6 +52,8 @@ void cia_timer_set_latch_hi(struct cia_timer *timer, uint8_t hi);
 
 void cia_timer_control_A(struct cia_timer *timer,
                          uint8_t control);
+void cia_timer_control_B(struct cia_timer *timer,
+                         uint8_t control);
 void cia_timer_cycle(struct cia_timer *timer_A,
                      struct cia_timer *timer_B);
 

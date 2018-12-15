@@ -140,12 +140,22 @@ void cia_set_register(struct cia_state *state,
     case CIA_REG_TIMER_A_HI:
         cia_timer_set_latch_hi(&state->timer_A, val);
         break;
+    case CIA_REG_TIMER_B_LO:
+        cia_timer_set_latch_lo(&state->timer_B, val);
+        break;
+    case CIA_REG_TIMER_B_HI:
+        cia_timer_set_latch_hi(&state->timer_B, val);
+        break;
     case CIA_REG_INTERRUPT_CONTROL:
         control_interrupts(state, val);
         break;
     case CIA_REG_TIMER_A_CONTROL:
         cia_timer_control_A(&state->timer_A, val);
         /* TODO: Handle 6 & 7 */
+        state->timer_A_raw = val;
+        break;
+    case CIA_REG_TIMER_B_CONTROL:
+        cia_timer_control_B(&state->timer_B, val);
         break;
     default:
         TRACE(state->trace_error, "set reg %02x not handled", reg);
@@ -177,12 +187,19 @@ uint8_t cia_get_register(struct cia_state *state,
         return state->timer_A.timer_lo;
     case CIA_REG_TIMER_A_HI:
         return state->timer_A.timer_hi;
+    case CIA_REG_TIMER_B_LO:
+        return state->timer_B.timer_lo;
+    case CIA_REG_TIMER_B_HI:
+        return state->timer_B.timer_hi;
     case CIA_REG_INTERRUPT_CONTROL:
         val = state->interrupt_data;
         /* Cleared on read */
         state->interrupt_data = 0x00;
         /* No more interrupt */
         return val;
+    case CIA_REG_TIMER_A_CONTROL:
+        return state->timer_A_raw;
+        break;
     default:
         TRACE(state->trace_error, "get reg %02x not handled", reg);
         break;

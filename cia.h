@@ -59,7 +59,9 @@ struct cia_state {
     uint8_t data_port_B;
 
     struct cia_timer timer_A;
+    uint8_t          timer_A_raw;
     struct cia_timer timer_B;
+    uint8_t          timer_B_raw;
 
     /* Callbacks */
     cia_get_peripheral on_get_peripheral_A;

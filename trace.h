@@ -7,7 +7,7 @@
 
 
 #define TRACE(point, format, args...)           \
-    if (point->fd != -1) {                      \
+    if (point && point->fd != -1) {             \
         char trace_buf[50];                     \
         int  len;                               \
         len = sprintf(trace_buf,                \
@@ -20,7 +20,7 @@
     }
 
 #define TRACE0(point, text)                     \
-    if (point->fd != -1) {                      \
+    if (point && point->fd != -1) {             \
         char trace_buf[50];                     \
         int  len;                               \
         len = sprintf(trace_buf,                \
@@ -32,7 +32,7 @@
     }
 
 #define TRACE_NOT_IMPL(point, feature)              \
-    if (point->fd != -1) {                          \
+    if (point && point->fd != -1) {                 \
         char trace_buf[50];                         \
         int  len;                                   \
         len = sprintf(trace_buf,                    \
@@ -49,9 +49,7 @@ struct trace_point {
     const char *name;
     int        fd;
 };
-
-void trace_init();
-
+void trace_init(); 
 struct trace_point* trace_add_point(const char *sys,
                                     const char *name);
 bool trace_enable_point(const char *sys,
