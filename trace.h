@@ -58,3 +58,7 @@ bool trace_enable_point(const char *sys,
                         const char *name,
                         int fd);
 
+struct trace_point* trace_enum_points(struct trace_point *curr);
+int trace_count_points();
+
+

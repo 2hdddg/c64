@@ -1,4 +1,7 @@
 #include <time.h>
+#include <stdlib.h>
+
+#include <menu.h>
 #include <ncurses.h>
 
 #include "petscii.h"
@@ -209,7 +212,6 @@ static void run_c64_loop(struct cpu_state *state)
         if (ch == KEY_F(2)) {
             break;
         }
-        /* ESCAPE, works when keypad support disabled */
         if (ch == 27) {
             break;
         }
@@ -242,33 +244,180 @@ static void run_c64_loop(struct cpu_state *state)
     }
 }
 
+#if 0
+MENU* create_trace_menu()
+{
+    ITEM **items;
+    int num_traces;
+    int i;
+    struct trace_point *trace;
+    char *text;
+    MENU *menu;
+
+    num_traces = trace_count_points();
+    items = calloc(num_traces + 1, sizeof(ITEM*));
+
+    i = 0;
+    trace = trace_enum_points(NULL);
+    while (trace != NULL) {
+        bool is_on = trace->fd != -1;
+        text = malloc(100);
+        sprintf(text, "%s %s",
+                trace->sys, trace->name);
+        items[i] = new_item(text, is_on ? "on" : "off");
+        set_item_value(items[i], is_on);
+        trace = trace_enum_points(trace);
+        i++;
+    }
+    items[i] = NULL;
+
+    menu = new_menu(items);
+    menu_opts_off(menu, O_ONEVALUE);
+
+    return menu;
+}
+#endif
+/* TODO: Free menu */
+
+typedef void (*menu_handler)();
+
+struct menu_choice {
+    const char   *text;
+    menu_handler handler;
+};
+
+static void set_fd(int fd)
+{
+    struct trace_point *trace;
+
+    trace = trace_enum_points(NULL);
+    while (trace != NULL) {
+        trace->fd = fd;
+        trace = trace_enum_points(trace);
+    }
+}
+
+static int _log_fd;
+
+static void turn_on_all()
+{
+    set_fd(_log_fd);
+}
+
+static void turn_off_all()
+{
+    set_fd(-1);
+}
+
+static struct menu_choice _main_menu_choices[] = {
+    {
+        .text = "Trace: Turn on all",
+        .handler = turn_on_all,
+    },
+    {
+        .text = "Trace: Turn off all",
+        .handler = turn_off_all,
+    },
+};
+static int _num_main_menu_choices = 2;
+
+MENU* create_main_menu()
+{
+    ITEM **items;
+    int i;
+
+    items = calloc(_num_main_menu_choices + 1, sizeof(ITEM*));
+
+    for (i = 0; i < _num_main_menu_choices; i++) {
+        items[i] = new_item(_main_menu_choices[i].text, NULL);
+        set_item_userptr(items[i], _main_menu_choices[i].handler);
+    }
+    items[i] = NULL;
+
+    return new_menu(items);
+}
+
 void run_menu_loop(bool *exit)
 {
     int ch = 0;
+    //MENU *trace_menu = create_trace_menu();
+    MENU *main_menu = create_main_menu();
+    MENU *curr_menu = main_menu;
+
+    post_menu(main_menu);
+    refresh();
+
     while (true) {
         ch = getch();
+
+        /* Check for escape to go back to c64, escape
+         * is sent for arrow keys and other keys as well,
+         * but when true ESC, first 27 and then -1 */
+        if (ch == 27) {
+            ch = getch();
+            if (ch == -1) {
+                /* Escape go back to C64 */
+                return;
+            }
+            /* For some reason we need to translate these... */
+            ch = getch();
+            switch (ch) {
+            case 0x41:
+                ch = KEY_UP;
+                break;
+            case 0x42:
+                ch = KEY_DOWN;
+                break;
+            case 0x43:
+                ch = KEY_RIGHT;
+                break;
+            case 0x44:
+                ch = KEY_LEFT;
+                break;
+            default:
+                break;
+            }
+        }
+
         switch (ch) {
-        case 27:
-            /* Escape go back to C64 */
-            return;
         case 'q':
         case 'Q':
             *exit = true;
             return;
+        case 'j':
+        case 'J':
+        case KEY_DOWN:
+            menu_driver(curr_menu, REQ_DOWN_ITEM);
+            break;
+        case 'k':
+        case 'K':
+        case KEY_UP:
+            menu_driver(curr_menu, REQ_UP_ITEM);
+            break;
+        case 10: {
+                /* Enter */
+                ITEM *curr = current_item(curr_menu);
+                menu_handler handler = item_userptr(curr);
+                handler();
+            }
+            break;
         default:
             continue;
         }
+
     }
 }
 
-int run_ncurses(struct cpu_state *state)
+int run_ncurses(struct cpu_state *state, int log_fd)
 {
     WINDOW *win = initscr();
-    raw();
+    //raw();
     noecho();
     //keypad(stdscr, TRUE);
     nodelay(win, TRUE);
     bool exit = false;
+
+    _log_fd = log_fd;
 
     while (!exit) {
         run_c64_loop(state);

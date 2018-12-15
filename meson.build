@@ -17,7 +17,8 @@ src = [
     'main_ncurses.c',
 ]
 
-executable('c64', src, dependencies: [], link_args: '-lncurses')
+executable('c64', src, dependencies: [], link_args: [
+    '-lmenu', '-lncurses'])
 
 # Test suites
 shared_library('suite_cpu', [

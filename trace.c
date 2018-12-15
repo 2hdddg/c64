@@ -52,3 +52,25 @@ bool trace_enable_point(const char *sys,
     return false;
 }
 
+struct trace_point* trace_enum_points(struct trace_point *curr)
+{
+    struct trace_point_item *item;
+
+    if (curr == NULL) {
+        return (struct trace_point*)_first;
+    }
+    item = (struct trace_point_item*)curr;
+    return (struct trace_point*)item->next;
+}
+
+int trace_count_points()
+{
+    int count = 0;
+    struct trace_point_item *item = _first;
+
+    while (item) {
+        count++;
+        item = item->next;
+    }
+    return count;
+}

@@ -9,6 +9,7 @@
 #include "cia2.h"
 #include "vic.h"
 #include "sid.h"
+#include "trace.h"
 
 /* Input pins, true indicates high */
 bool _pin_loram;
@@ -24,7 +25,7 @@ uint8_t *_rom_basic;
 uint8_t *_rom_chargen;
 
 
-int _trace_banks_fd;
+static struct trace_point *_trace_banks;
 
 bool _kernal_mapped;
 bool _basic_mapped;
@@ -69,16 +70,16 @@ static inline void trace_banks()
     const char *charen_in  = "Banking: CHAREN @ 0xd000\n";
     const char *io_in      = "Banking: IO @ 0xd000\n";
 
-    if (_trace_banks_fd >= 0) {
+    if (_trace_banks->fd >= 0) {
         trace_switch(kernal_in, kernal_out,
                      _pin_hiram, _kernal_mapped,
-                     _trace_banks_fd);
+                     _trace_banks->fd);
         trace_switch(basic_in, basic_out,
                      _pin_loram, _basic_mapped,
-                     _trace_banks_fd);
+                     _trace_banks->fd);
         trace_switch(charen_in, io_in,
                      !_pin_charen, _charen_mapped,
-                     _trace_banks_fd);
+                     _trace_banks->fd);
     }
 }
 
@@ -185,9 +186,11 @@ void pla_init(uint8_t *rom_kernal,
     _rom_kernal = rom_kernal;
     _rom_basic = rom_basic;
     _rom_chargen = rom_chargen;
-    _trace_banks_fd = -1;
     _kernal_mapped = false;
     _basic_mapped = false;
+
+    /* Debugging */
+    _trace_banks = trace_add_point("PLA", "banks");
 }
 
 void pla_pins_from_cpu(bool loram,
@@ -198,9 +201,4 @@ void pla_pins_from_cpu(bool loram,
     _pin_hiram = hiram;
     _pin_charen = charen;
     configure();
-}
-
-void pla_trace_banks(int fd)
-{
-    _trace_banks_fd = fd;
 }

@@ -11,6 +11,7 @@
 #include "cpu_port.h"
 #include "pla.h"
 #include "cia1.h"
+#include "cia2.h"
 #include "keyboard.h"
 #include "vic.h"
 #include "sid.h"
@@ -53,7 +54,6 @@ int setup(struct cpu_state *state)
 
     mem_init();
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
-    pla_trace_banks(STDOUT_FILENO);
     keyboard_init();
     sid_init();
 
@@ -61,6 +61,7 @@ int setup(struct cpu_state *state)
     cpu_init(mem_get_for_cpu, mem_set_for_cpu);
     mem_reset();
     cia1_init();
+    cia2_init();
     cia1_reset();
     printf("Powering on..\n");
     cpu_poweron();
@@ -72,7 +73,7 @@ int setup(struct cpu_state *state)
     return 0;
 }
 
-int run_ncurses(struct cpu_state *state);
+int run_ncurses(struct cpu_state *state, int log_fd);
 
 void just_run(struct cpu_state *state)
 {
@@ -98,11 +99,13 @@ int main(int argc, char **argv)
     }
 
     trace_enable_point("VIC", "set reg", the_log);
+    trace_enable_point("CIA1", "ERROR", the_log);
+    trace_enable_point("CIA2", "ERROR", the_log);
+    trace_enable_point("PLA", "banks", the_log);
 /*
     trace_enable_point("KBD", "set port", the_log);
     trace_enable_point("KBD", "get port", the_log);
     trace_enable_point("KBD", "key", the_log);
-    trace_enable_point("CIA1", "ERROR", the_log);
     trace_enable_point("CIA1", "set port", the_log);
     trace_enable_point("CIA1", "get port", the_log);
     trace_enable_point("CIA1", "timer", the_log);
@@ -110,7 +113,7 @@ int main(int argc, char **argv)
 */
 
     if (argc)
-        run_ncurses(&state);
+        run_ncurses(&state, the_log);
     else
         just_run(&state);
 
