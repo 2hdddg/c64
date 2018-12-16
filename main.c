@@ -53,21 +53,20 @@ int setup(struct cpu_state *state)
     pla_init(_kernal_rom, _basic_rom, _chargen_rom);
     keyboard_init();
     sid_init();
-
     cpu_port_init();
     cpu_init(mem_get_for_cpu, mem_set_for_cpu);
-    mem_reset();
     cia1_init();
     cia2_init();
+    vic_init();
+
+    mem_reset();
     cia1_reset();
     cia2_reset();
-    printf("Powering on..\n");
-    cpu_poweron();
     keyboard_reset();
+
     state->pc = 0xfce2;
     cpu_set_state(state);
 
-    vic_init();
     return 0;
 }
 
@@ -76,13 +75,14 @@ int main(int argc, char **argv)
     struct cpu_state state;
     bool exit = false;
 
+    if (setup(&state) != 0) {
+        return -1;
+    }
+
     if (commandline_init(&exit, &state) != 0) {
         return -1;
     }
 
-    if (setup(&state) != 0) {
-        return -1;
-    }
 
     while (!exit) {
         ncurses_c64_loop(&state);

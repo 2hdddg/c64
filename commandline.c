@@ -4,13 +4,19 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <malloc.h>
+#include <stdlib.h>
 
+#include "mem.h"
+#include "cpu.h"
 #include "trace.h"
 #include "commandline.h"
 
 static int  _log_fd;
 static bool _exit_loop;
 static bool *_exit_app;
+
+static uint16_t _ram_address = 0;
+static uint16_t _dis_address = 0;
 
 typedef void (*command_handler)();
 
@@ -43,30 +49,21 @@ static void on_trace()
             p = trace_enum_points(p);
         }
     }
-    else if (strcmp(token, "all") == 0) {
-        /* Turn on all traces */
-        p = trace_enum_points(NULL);
-        while (p) {
-            trace_enable_point(p->sys, p->name, _log_fd);
-            p = trace_enum_points(p);
-        }
-    }
-    else if (strcmp(token, "none") == 0) {
-        /* Turn off all traces */
-        p = trace_enum_points(NULL);
-        while (p) {
-            trace_enable_point(p->sys, p->name, -1);
-            p = trace_enum_points(p);
-        }
-    }
     else if (strcmp(token, "on") == 0 ||
              strcmp(token, "off") == 0) {
-        char *sys  = strtok(NULL, " ");
-        char *name = strtok(NULL, " ");
+        char *sys    = strtok(NULL, " ");
+        char *name   = strtok(NULL, " ");
+        bool turn_on = strcmp(token, "on") == 0;
+        int  fd      = turn_on ? _log_fd : -1;
 
-        if (sys == NULL || name == NULL) {
-            printf("Needs sys and name of trace\n");
-            return;
+        p = trace_enum_points(NULL);
+        while (p) {
+            if (sys == NULL || strcmp(p->sys, sys) == 0) {
+                if (name == NULL || strcmp(p->name, name) == 0) {
+                    p->fd = fd;
+                }
+            }
+            p = trace_enum_points(p);
         }
     }
     else {
@@ -74,12 +71,65 @@ static void on_trace()
     }
 }
 
+static void on_ram()
+{
+    const uint16_t width = 16;
+    uint8_t        *ram  = mem_get_ram(_ram_address);
+    int            num   = width * 10;
+    char          *token = strtok(NULL, " ");
+
+    if (token) {
+        char *out;
+        int user_address = strtol(token, &out, 16);
+        if (user_address == 0 && out == token) {
+            printf("Illegal address: %s\n", token);
+            return;
+        }
+        _ram_address = user_address & 0xfff0;
+    }
+
+    if (_ram_address + num > 0xffff) {
+        num = 0xffff - _ram_address;
+    }
+
+    int lines = (num + (width - 1)) / width;
+
+    while (lines--) {
+        printf("%04x ", _ram_address);
+        for (int i = 0; i < width; i++) {
+            printf("%02x ", *ram);
+            ram++;
+        }
+
+        _ram_address += width;
+        printf("\n");
+    }
+}
+
+static void on_dis()
+{
+    int  num    = 10;
+    char *token = strtok(NULL, " ");
+
+    if (token) {
+        char *out;
+        int user_address = strtol(token, &out, 16);
+        if (user_address == 0 && out == token) {
+            printf("Illegal address: %s\n", token);
+            return;
+        }
+        _dis_address = user_address & 0xfff0;
+    }
+
+    cpu_disassembly_at(STDOUT_FILENO, _dis_address, num, &_dis_address);
+}
+
 static void on_c64()
 {
     _exit_loop = true;
 }
 
-static void on_exit()
+static void xon_exit()
 {
     _exit_loop = true;
     *_exit_app = true;
@@ -102,11 +152,19 @@ struct command _commands[] = {
     },
     {
         .name    = "exit",
-        .handler = on_exit,
+        .handler = xon_exit,
     },
     {
         .name    = "c64",
         .handler = on_c64,
+    },
+    {
+        .name    = "ram",
+        .handler = on_ram,
+    },
+    {
+        .name    = "dis",
+        .handler = on_dis,
     },
 };
 int _num_commands = sizeof(_commands) / sizeof(_commands[0]);
@@ -144,27 +202,25 @@ void commandline_loop()
 
 int commandline_init(bool *exit, struct cpu_state *state)
 {
-    trace_init();
     _log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY);
     _exit_app = exit;
 
-/*
-    trace_enable_point("VIC", "set reg", the_log);
-    trace_enable_point("CIA1", "ERROR", the_log);
-    trace_enable_point("CIA1", "timer", the_log);
-    trace_enable_point("CIA2", "ERROR", the_log);
-    trace_enable_point("CIA2", "timer", the_log);
-    trace_enable_point("CIA2", "set port", the_log);
-    trace_enable_point("CIA2", "get port", the_log);
-    trace_enable_point("PLA", "banks", the_log);
-    trace_enable_point("KBD", "set port", the_log);
-    trace_enable_point("KBD", "get port", the_log);
-    trace_enable_point("KBD", "key", the_log);
-    trace_enable_point("CIA1", "set port", the_log);
-    trace_enable_point("CIA1", "get port", the_log);
-    trace_enable_point("CIA1", "timer", the_log);
-    trace_enable_point("CPU", "execution", the_log);
-*/
+    /* Defaults */
+    trace_enable_point("VIC",  "set reg", -1);
+    trace_enable_point("CIA1", "ERROR", -1);
+    trace_enable_point("CIA1", "timer", -1);
+    trace_enable_point("CIA2", "ERROR", -1);
+    trace_enable_point("CIA2", "timer", -1);
+    trace_enable_point("CIA2", "set port", -1);
+    trace_enable_point("CIA2", "get port", -1);
+    trace_enable_point("PLA",  "banks", _log_fd);
+    trace_enable_point("KBD",  "set port", -1);
+    trace_enable_point("KBD",  "get port", -1);
+    trace_enable_point("KBD",  "key", -1);
+    trace_enable_point("CIA1", "set port", -1);
+    trace_enable_point("CIA1", "get port", -1);
+    trace_enable_point("CIA1", "timer", -1);
+    trace_enable_point("CPU",  "execution", -1);
 
     return 0;
 }

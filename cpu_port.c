@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdbool.h>
 
 #include "cpu_port.h"
@@ -6,8 +7,10 @@
 
 /* At address 0x00 */
 uint8_t _data_direction_reg;
+uint8_t _data_direction_reg_shadow;
 /* At address 0x01 */
 uint8_t _peripheral_reg;
+uint8_t _peripheral_reg_shadow;
 
 /* I/O lines */
 /* These lines are always 1 by external pull up resistors */
@@ -32,6 +35,11 @@ static inline bool _is_peripheral_high(uint8_t line)
 
 static void _on_changed()
 {
+    if (_peripheral_reg == _peripheral_reg_shadow &&
+        _data_direction_reg == _data_direction_reg_shadow) {
+        return;
+    }
+
     /* When data direction is set to IN the corresponding value
      * in peripheral should come from peripheral I/O line. */
     if (_is_direction_in(CPU_PORT_LORAM)) {
@@ -58,6 +66,9 @@ static void _on_changed()
     pla_pins_from_cpu(_is_peripheral_high(CPU_PORT_LORAM),
                       _is_peripheral_high(CPU_PORT_LORAM),
                       _is_peripheral_high(CPU_PORT_LORAM));
+
+    _peripheral_reg_shadow = _peripheral_reg;
+    _data_direction_reg_shadow = _data_direction_reg;
 }
 
 static void _mem_set(uint8_t val, uint16_t absolute,
@@ -95,6 +106,8 @@ void cpu_port_init()
 {
     _data_direction_reg = 0x00;
     _peripheral_reg = 0x00;
+    _data_direction_reg_shadow = !_data_direction_reg;
+    _peripheral_reg_shadow = !_peripheral_reg;
     _on_changed();
 
     /* Install hooks for CPU reading/writing to 0x00 & 0x01. */

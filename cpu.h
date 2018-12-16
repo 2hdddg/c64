@@ -40,7 +40,8 @@ void cpu_interrupt_request();
 /* For interactive use */
 void cpu_disassembly_at(int fd,
                         uint16_t address,
-                        int num_instructions);
+                        int num_instructions,
+                        uint16_t *next_address);
 
 /* For debug */
 void cpu_set_state(struct cpu_state *state);

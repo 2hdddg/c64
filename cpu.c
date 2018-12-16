@@ -932,10 +932,6 @@ void cpu_reset()
     _irq_pending = false;
     _stack_overflow = false;
     _stack_underflow = false;
-}
-
-void cpu_poweron()
-{
     /* Empty stack */
     _state.sp = 0xff;
 }
@@ -995,7 +991,8 @@ static void get_instruction(uint16_t address,
 
 void cpu_disassembly_at(int fd,
                         uint16_t address,
-                        int num_instructions)
+                        int num_instructions,
+                        uint16_t *next_address)
 {
     struct instruction instr;
     uint8_t offset;
@@ -1006,5 +1003,6 @@ void cpu_disassembly_at(int fd,
         address += offset;
         write(fd, "\n", 1);
     }
+    *next_address = address;
 }
 
