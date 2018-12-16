@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     struct cpu_state state;
     bool exit = false;
 
-    if (commandline_init() != 0) {
+    if (commandline_init(&exit, &state) != 0) {
         return -1;
     }
 
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
     while (!exit) {
         ncurses_c64_loop(&state);
-        commandline_loop(&exit, &state);
+        commandline_loop();
     }
 
     return 0;
