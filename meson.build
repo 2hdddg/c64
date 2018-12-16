@@ -8,13 +8,15 @@ src = [
     'cia1.c',
     'cia2.c',
     'keyboard.c',
-    'main.c',
     'mem.c',
     'pla.c',
     'sid.c',
-    'trace.c',
     'vic.c',
-    'main_ncurses.c',
+
+    'main.c',
+    'commandline.c',
+    'ncurses_c64.c',
+    'trace.c',
 ]
 
 executable('c64', src, dependencies: [], link_args: [

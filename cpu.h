@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 
 /* Clocked at 1.023 Mhz NTSC or 0.985 Mhz PAL */

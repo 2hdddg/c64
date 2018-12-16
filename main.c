@@ -1,11 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
-#include "trace.h"
 #include "mem.h"
 #include "cpu.h"
 #include "cpu_port.h"
@@ -16,11 +11,13 @@
 #include "vic.h"
 #include "sid.h"
 
+#include "commandline.h"
+#include "ncurses_c64.h"
+
 uint8_t _basic_rom[8192];
 uint8_t _kernal_rom[8192];
 uint8_t _chargen_rom[4096];
 
-int log_fd;
 
 bool load_rom(const char *path,
               uint8_t *rom_out, uint16_t size)
@@ -74,53 +71,23 @@ int setup(struct cpu_state *state)
     return 0;
 }
 
-int run_ncurses(struct cpu_state *state, int log_fd);
-
-void just_run(struct cpu_state *state)
-{
-    //int num = 15000000;
-    int num = 15;
-    while (num--) {
-        /* Should happen at approx 1Mhz */
-        cpu_step(state);
-        cia1_cycle();
-    }
-}
-
 int main(int argc, char **argv)
 {
     struct cpu_state state;
+    bool exit = false;
 
-    trace_init();
-    log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY);
-    int the_log = log_fd;
+    if (commandline_init() != 0) {
+        return -1;
+    }
 
     if (setup(&state) != 0) {
         return -1;
     }
 
-    trace_enable_point("VIC", "set reg", the_log);
-    trace_enable_point("CIA1", "ERROR", the_log);
-    trace_enable_point("CIA1", "timer", the_log);
-    trace_enable_point("CIA2", "ERROR", the_log);
-    trace_enable_point("CIA2", "timer", the_log);
-    trace_enable_point("CIA2", "set port", the_log);
-    trace_enable_point("CIA2", "get port", the_log);
-    trace_enable_point("PLA", "banks", the_log);
-/*
-    trace_enable_point("KBD", "set port", the_log);
-    trace_enable_point("KBD", "get port", the_log);
-    trace_enable_point("KBD", "key", the_log);
-    trace_enable_point("CIA1", "set port", the_log);
-    trace_enable_point("CIA1", "get port", the_log);
-    trace_enable_point("CIA1", "timer", the_log);
-    trace_enable_point("CPU", "execution", the_log);
-*/
-
-    if (argc)
-        run_ncurses(&state, the_log);
-    else
-        just_run(&state);
+    while (!exit) {
+        ncurses_c64_loop(&state);
+        commandline_loop(&exit, &state);
+    }
 
     return 0;
 }
