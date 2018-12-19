@@ -1,5 +1,6 @@
 project('c64', 'c')
 src = [
+    'basic.c',
     'cpu.c',
     'cpu_instr.c',
     'cpu_port.c',

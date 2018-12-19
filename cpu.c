@@ -621,7 +621,7 @@ static void jump_to_subroutine(struct instruction *instr)
     uint8_t  *ops    = instr->operands;
     uint16_t address = make_address(ops[1], ops[0]);
 
-    stack_push_address(_state.pc);
+    stack_push_address(_state.pc - 1);
     _state.pc = address;
 }
 
@@ -813,7 +813,7 @@ static int execute(struct instruction *instr)
         jump_to_subroutine(instr);
         break;
     case RTS:
-        _state.pc = stack_pop_address();
+        _state.pc = stack_pop_address() + 1;
         break;
 
     /* Status register instuctions */

@@ -174,6 +174,23 @@ static uint16_t map_key(int ch, uint16_t *extra)
     case ' ':
         return KEYB_SPACE;
 
+    case ',':
+        return KEYB_COMMA;
+
+    case ':':
+        return KEYB_COLON;
+
+    case '*':
+        return KEYB_STAR;
+
+    case '(':
+        *extra = KEYB_LEFT_SHIFT;
+        return KEYB_PARAN_OPEN;
+
+    case ')':
+        *extra = KEYB_LEFT_SHIFT;
+        return KEYB_PARAN_CLOSE;
+
     /* Enter */
     case 10:
         return KEYB_RETURN;

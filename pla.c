@@ -202,3 +202,8 @@ void pla_pins_from_cpu(bool loram,
     _pin_charen = charen;
     configure();
 }
+
+bool pla_is_basic_mapped()
+{
+    return _basic_mapped;
+}

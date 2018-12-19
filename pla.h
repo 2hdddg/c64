@@ -7,6 +7,7 @@
 
 
 #pragma once
+#include <stdint.h>
 #include <stdbool.h>
 
 void pla_init(uint8_t *rom_kernal,
@@ -16,4 +17,7 @@ void pla_init(uint8_t *rom_kernal,
 void pla_pins_from_cpu(bool loram_high,
                        bool hiram_high,
                        bool charen_high);
+
+
+bool pla_is_basic_mapped();
 

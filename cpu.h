@@ -32,7 +32,6 @@ void cpu_init(cpu_mem_get mem_get,
               cpu_mem_set mem_set);
 void cpu_reset();
 
-void cpu_poweron();
 void cpu_step(struct cpu_state *state_out);
 
 void cpu_interrupt_request();

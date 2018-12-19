@@ -2191,7 +2191,7 @@ int test_return_from_subroutine()
             .name = "Returns to address on stack",
             .instructions = { 0xa9, 0x10, /* LDA #$10 */
                               0x48,       /* PHA */
-                              0xa9, 0x20, /* LDA #$20 */
+                              0xa9, 0x1f, /* LDA #$1f */
                               0x48,       /* PHA */
                               0x60,       /* RTS */
                             },

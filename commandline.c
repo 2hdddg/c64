@@ -10,6 +10,7 @@
 #include "cpu.h"
 #include "trace.h"
 #include "commandline.h"
+#include "basic.h"
 
 static int  _log_fd;
 static bool _exit_loop;
@@ -74,13 +75,14 @@ static void on_trace()
 static void on_ram()
 {
     const uint16_t width = 16;
-    uint8_t        *ram  = mem_get_ram(_ram_address);
+    uint8_t        *ram  = NULL;
     int            num   = width * 10;
     char          *token = strtok(NULL, " ");
+    int           lines  = 0;
 
     if (token) {
         char *out;
-        int user_address = strtol(token, &out, 16);
+        int  user_address = strtol(token, &out, 16);
         if (user_address == 0 && out == token) {
             printf("Illegal address: %s\n", token);
             return;
@@ -92,8 +94,8 @@ static void on_ram()
         num = 0xffff - _ram_address;
     }
 
-    int lines = (num + (width - 1)) / width;
-
+    lines = (num + (width - 1)) / width;
+    ram =  mem_get_ram(_ram_address);
     while (lines--) {
         printf("%04x ", _ram_address);
         for (int i = 0; i < width; i++) {
@@ -135,6 +137,11 @@ static void xon_exit()
     *_exit_app = true;
 }
 
+static void on_basic()
+{
+    basic_stat(STDOUT_FILENO);
+}
+
 /*
  * SYNTAX:
  *
@@ -165,6 +172,10 @@ struct command _commands[] = {
     {
         .name    = "dis",
         .handler = on_dis,
+    },
+    {
+        .name    = "basic",
+        .handler = on_basic,
     },
 };
 int _num_commands = sizeof(_commands) / sizeof(_commands[0]);

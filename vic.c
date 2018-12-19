@@ -13,7 +13,7 @@ void vic_init()
 {
     _trace_set_reg = trace_add_point("VIC", "set reg");
     _trace_get_reg = trace_add_point("VIC", "get reg");
-    _trace_error = trace_add_point("SID", "ERROR");
+    _trace_error   = trace_add_point("VIC", "ERROR");
 }
 
 uint8_t vic_mem_get(uint16_t absolute, uint8_t relative,
