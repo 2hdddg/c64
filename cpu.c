@@ -32,6 +32,7 @@ static bool               _stack_overflow;
 static bool               _stack_underflow;
 static struct cpu_state   _state_before;
 static struct trace_point *_trace_execution;
+static struct trace_point *_trace_interrupt;
 static struct trace_point *_trace_error;
 
 struct instruction {
@@ -244,7 +245,7 @@ static void interrupt_request()
 
     /* Retrieve handler at cpu hardwired address */
     read_address(ADDR_IRQ_VECTOR, &handler_address);
-    //printf("Jumping to irq handler at %04x\n", handler_address);
+    TRACE(_trace_interrupt, "IRQ handled by %04x", handler_address);
     /* Point program counter to IRQ handler routine */
     _state.pc = handler_address;
 }
@@ -930,6 +931,7 @@ void cpu_init(cpu_mem_get mem_get,
 
     /* Debugging */
     _trace_execution = trace_add_point("CPU", "execution");
+    _trace_interrupt = trace_add_point("CPU", "interrupts");
     _trace_error     = trace_add_point("CPU", "ERROR");
 }
 
@@ -951,7 +953,11 @@ void cpu_set_state(struct cpu_state *state)
 void cpu_interrupt_request()
 {
     if (!(_state.flags & FLAG_IRQ_DISABLE)) {
+        TRACE0(_trace_interrupt, "IRQ queued");
         _irq_pending = true;
+    }
+    else {
+        TRACE0(_trace_interrupt, "IRQ denied");
     }
 }
 
