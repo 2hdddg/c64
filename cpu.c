@@ -32,6 +32,7 @@ static bool               _stack_overflow;
 static bool               _stack_underflow;
 static struct cpu_state   _state_before;
 static struct trace_point *_trace_execution;
+static struct trace_point *_trace_error;
 
 struct instruction {
     const struct operation *operation;
@@ -286,7 +287,8 @@ static uint16_t get_address_from_mode(struct instruction *instr)
         address = ops[0] + state->reg_y;
         break;
     default:
-        printf("Unhandled address mode\n");
+        TRACE(_trace_error, "Unhandled address mode: %02x",
+              instr->operation->mode);
         break;
     }
     return address;
@@ -529,8 +531,9 @@ static void subtract(struct instruction *instr)
         operand = _mem_get(address);
     }
 
-    if (state->flags & FLAG_DECIMAL_MODE) 
-        printf("Decimal mode not supported on sub\n");
+    if (state->flags & FLAG_DECIMAL_MODE) {
+        TRACE_NOT_IMPL(_trace_error, "SUB decimal");
+    }
     else {
         cpu_instr_sub(state->reg_a, operand,
                       &state->reg_a, &state->flags);
@@ -579,7 +582,8 @@ static void branch(struct instruction *instr,
         }
         break;
     default:
-        printf("Unhandled address mode\n");
+        TRACE(_trace_error, "Unhandled address mode for branch: %02x",
+              instr->operation->mode);
         break;
     }
 }
@@ -608,7 +612,8 @@ static void jump(struct instruction *instr)
         hi = _mem_get(address);
         break;
     default:
-        printf("Unhandled address mode\n");
+        TRACE(_trace_error, "Unhandled address mode for JMP: %02x",
+              instr->operation->mode);
         break;
     }
 
@@ -844,8 +849,8 @@ static int execute(struct instruction *instr)
         break;
 
     default:
-        printf("Unknown mnem: %s\n",
-               mnemonics_strings[instr->operation->mnem]);
+        TRACE(_trace_error, "Unknown mnem: %s",
+              mnemonics_strings[instr->operation->mnem]);
     }
 
     /* Writes instruction and registers to debug fd */
@@ -907,8 +912,9 @@ static int fetch_and_decode(struct instruction *instr)
         operands[1] = _mem_get(_state.pc++);
         break;
     default:
-        printf("Unknown number of operands for mode: %d\n",
-               instr->operation->mode);
+        TRACE(_trace_error,
+              "Unknown number of operands for mode: %02x",
+              instr->operation->mode);
         break;
     }
 
@@ -924,6 +930,7 @@ void cpu_init(cpu_mem_get mem_get,
 
     /* Debugging */
     _trace_execution = trace_add_point("CPU", "execution");
+    _trace_error     = trace_add_point("CPU", "ERROR");
 }
 
 void cpu_reset()
