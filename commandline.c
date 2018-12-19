@@ -217,21 +217,11 @@ int commandline_init(bool *exit, struct cpu_state *state)
     _exit_app = exit;
 
     /* Defaults */
-    trace_enable_point("VIC",  "set reg", -1);
-    trace_enable_point("CIA1", "ERROR", -1);
-    trace_enable_point("CIA1", "timer", -1);
-    trace_enable_point("CIA2", "ERROR", -1);
-    trace_enable_point("CIA2", "timer", -1);
-    trace_enable_point("CIA2", "set port", -1);
-    trace_enable_point("CIA2", "get port", -1);
-    trace_enable_point("PLA",  "banks", _log_fd);
-    trace_enable_point("KBD",  "set port", -1);
-    trace_enable_point("KBD",  "get port", -1);
-    trace_enable_point("KBD",  "key", -1);
-    trace_enable_point("CIA1", "set port", -1);
-    trace_enable_point("CIA1", "get port", -1);
-    trace_enable_point("CIA1", "timer", -1);
-    trace_enable_point("CPU",  "execution", -1);
+    trace_enable_point("CIA1", "ERROR", _log_fd);
+    trace_enable_point("CIA2", "ERROR", _log_fd);
+    trace_enable_point("CPU",  "ERROR", _log_fd);
+    trace_enable_point("VIC",  "ERROR", _log_fd);
+    trace_enable_point("SID",  "ERROR", _log_fd);
 
     return 0;
 }

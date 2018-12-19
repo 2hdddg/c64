@@ -37,10 +37,10 @@ static inline uint8_t get_bit_if_set(uint8_t val, uint8_t bit)
 }
 
 static uint8_t port_get(uint8_t directions, uint8_t data,
-                 cia_get_peripheral get)
+                        cia_get_peripheral get)
 {
     /* Peripherals */
-    uint8_t in  = get();
+    uint8_t in  = get(directions);
     uint8_t val = 0x00;
     uint8_t bit = 0x01;
 
@@ -57,7 +57,7 @@ static uint8_t port_get(uint8_t directions, uint8_t data,
 }
 
 static void port_set(uint8_t directions, uint8_t data,
-              cia_set_peripheral set)
+                     cia_set_peripheral set)
 {
     uint8_t out = 0x00;
     uint8_t bit = 0x01;
@@ -68,7 +68,7 @@ static void port_set(uint8_t directions, uint8_t data,
         }
         bit = bit << 1;
     }
-    set(out);
+    set(out, directions);
 }
 
 void cia_reset(struct cia_state *state)

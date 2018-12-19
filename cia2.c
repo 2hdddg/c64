@@ -7,24 +7,26 @@
 
 static struct cia_state _state = { 0 };
 
-static uint8_t _get_port_A()
+static uint8_t _get_port_A(uint8_t interesting_bits)
 {
+    /* Query VIC for memory location */
+    /* Query RS-232 */
     TRACE_NOT_IMPL(_state.trace_error, "get port A");
     return 0;
 }
 
-static uint8_t _get_port_B()
+static uint8_t _get_port_B(uint8_t interesting_bits)
 {
     TRACE_NOT_IMPL(_state.trace_error, "get port B");
     return 0;
 }
 
-static void _set_port_A(uint8_t d)
+static void _set_port_A(uint8_t d, uint8_t valid_lines)
 {
     TRACE_NOT_IMPL(_state.trace_error, "set port A");
 }
 
-static void _set_port_B(uint8_t d)
+static void _set_port_B(uint8_t d, uint8_t valid_lines)
 {
     TRACE_NOT_IMPL(_state.trace_error, "set port B");
 }

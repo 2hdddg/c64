@@ -43,8 +43,8 @@
 /* When writing, mask is modified depending on bit 7 */
 #define CIA_INT_MASK_SET              0x80
 
-typedef uint8_t (*cia_get_peripheral)();
-typedef void (*cia_set_peripheral)(uint8_t val);
+typedef uint8_t (*cia_get_peripheral)(uint8_t interesting_bits);
+typedef void (*cia_set_peripheral)(uint8_t val, uint8_t valid_bits);
 typedef void (*cia_interrupt)();
 
 struct cia_state {

@@ -66,13 +66,13 @@ void keyboard_up(uint16_t key)
     TRACE(_trace_key, "%02x up on line %02x", key, line);
 }
 
-uint8_t keyboard_get_port_A()
+uint8_t keyboard_get_port_A(uint8_t interesting_bits)
 {
     TRACE(_trace_get_port, "A: %02x", _data_port_A);
     return _data_port_A;
 }
 
-uint8_t keyboard_get_port_B()
+uint8_t keyboard_get_port_B(uint8_t interesting_bits)
 {
     /* Default to no keys pressed */
     uint8_t keys = 0x00;
@@ -95,13 +95,13 @@ uint8_t keyboard_get_port_B()
     return keys;
 }
 
-void keyboard_set_port_A(uint8_t data)
+void keyboard_set_port_A(uint8_t data, uint8_t valid_lines)
 {
     _data_port_A = data;
     TRACE(_trace_set_port, "A: %02x", data);
 }
 
-void keyboard_set_port_B(uint8_t data)
+void keyboard_set_port_B(uint8_t data, uint8_t valid_lines)
 {
     /* Does nothing here! What should happen? */
     TRACE(_trace_set_port, "B: %02x", data);
