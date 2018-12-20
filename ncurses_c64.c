@@ -191,11 +191,33 @@ static uint16_t map_key(int ch, uint16_t *extra)
         *extra = KEYB_LEFT_SHIFT;
         return KEYB_PARAN_CLOSE;
 
+    case '\'':
+        *extra = KEYB_LEFT_SHIFT;
+        return KEYB_APOSTROPHE;
+
+    case '+':
+        return KEYB_PLUS;
+
+    case '-':
+        return KEYB_MINUS;
+
+    case '=':
+        return KEYB_EQ;
+
     /* Enter */
     case 10:
         return KEYB_RETURN;
 
+    case 0xc2:
+        *extra = KEYB_LEFT_SHIFT;
+        return KEYB_DOLLAR;
+
+    case 0x7f:
+        return KEYB_DEL;
+
     default:
+        if (ch != -1)
+            printf("%02x\n", ch);
         return 0;
     }
 }
