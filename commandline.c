@@ -221,7 +221,9 @@ int commandline_init(bool *exit, struct cpu_state *state)
     trace_enable_point("CIA2", "ERROR", _log_fd);
     trace_enable_point("CPU",  "ERROR", _log_fd);
     trace_enable_point("VIC",  "ERROR", _log_fd);
+    trace_enable_point("VIC",  "bank", _log_fd);
     trace_enable_point("SID",  "ERROR", _log_fd);
+    trace_enable_point("CIA2", "set port", _log_fd);
 
     return 0;
 }

@@ -123,16 +123,16 @@ void cia_set_register(struct cia_state *state,
         TRACE(state->trace_set_port, "B: %02x", val);
         break;
     case CIA_REG_DATA_DIRECTION_PORT_A:
+        TRACE(state->trace_set_port, "A direction: %02x", val);
         state->data_direction_port_A = val;
         port_set(state->data_direction_port_A, state->data_port_A,
                  state->on_set_peripheral_A);
-        TRACE(state->trace_set_port, "A direction: %02x", val);
         break;
     case CIA_REG_DATA_DIRECTION_PORT_B:
+        TRACE(state->trace_set_port, "B direction: %02x", val);
         state->data_direction_port_B = val;
         port_set(state->data_direction_port_B, state->data_port_B,
                  state->on_set_peripheral_B);
-        TRACE(state->trace_set_port, "B direction: %02x", val);
         break;
     case CIA_REG_TIMER_A_LO:
         cia_timer_set_latch_lo(&state->timer_A, val);

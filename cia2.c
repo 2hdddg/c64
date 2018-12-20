@@ -2,6 +2,7 @@
 
 #include "cia.h"
 #include "cia2.h"
+#include "vic.h"
 #include "trace.h"
 
 
@@ -9,10 +10,15 @@ static struct cia_state _state = { 0 };
 
 static uint8_t _get_port_A(uint8_t interesting_bits)
 {
+    uint8_t val = 0x00;
+
     /* Query VIC for memory location */
-    /* Query RS-232 */
-    TRACE_NOT_IMPL(_state.trace_error, "get port A");
-    return 0;
+    val = (uint8_t)vic_get_bank();
+
+    /* TODO: Query RS-232 */
+    /* TODO: Query serial bus */
+
+    return val;
 }
 
 static uint8_t _get_port_B(uint8_t interesting_bits)
@@ -23,7 +29,12 @@ static uint8_t _get_port_B(uint8_t interesting_bits)
 
 static void _set_port_A(uint8_t d, uint8_t valid_lines)
 {
-    TRACE_NOT_IMPL(_state.trace_error, "set port A");
+    /* Select VIC bank */
+    if ((valid_lines & 0b11) != 0) {
+        vic_set_bank(d & 0b11);
+    }
+
+    /* TODO: */
 }
 
 static void _set_port_B(uint8_t d, uint8_t valid_lines)
