@@ -69,6 +69,7 @@ int setup(struct cpu_state *state)
 
     return 0;
 }
+void sdl_c64_loop(struct cpu_state *state);
 
 int main(int argc, char **argv)
 {
@@ -85,7 +86,8 @@ int main(int argc, char **argv)
 
 
     while (!exit) {
-        ncurses_c64_loop(&state);
+        //ncurses_c64_loop(&state);
+        sdl_c64_loop(&state);
         commandline_loop();
     }
 

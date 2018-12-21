@@ -1,9 +1,12 @@
 #pragma once
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "mem.h"
 
 void vic_init();
+
+void vic_screen(uint32_t *screen, uint32_t pitch);
 
 /* Values match CIA2 port A */
 enum vic_bank {
@@ -25,6 +28,8 @@ void vic_mem_set(uint8_t val, uint16_t absolute,
 
 void vic_set_bank(enum vic_bank bank);
 enum vic_bank vic_get_bank();
+
+void vic_step(bool *refresh);
 
 //void vic_trace_register_set(int fd);
 //void vic_trace_register_get(int fd);

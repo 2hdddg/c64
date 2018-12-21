@@ -16,11 +16,16 @@ src = [
 
     'main.c',
     'commandline.c',
-    'ncurses_c64.c',
     'trace.c',
+
+    'sdl_c64.c',
+
+    'ncurses_c64.c',
 ]
 
-executable('c64', src, dependencies: [], link_args: [
+sdl_dep = dependency('sdl2')
+
+executable('c64', src, dependencies: [sdl_dep], link_args: [
     '-lmenu', '-lncurses'])
 
 # Test suites
