@@ -25,6 +25,15 @@ void mem_init()
     memset(_color_ram, 0, 1000);
 }
 
+uint8_t* mem_get_ram_for_vic(uint16_t addr)
+{
+    return &_ram[addr];
+}
+
+uint8_t* mem_get_color_ram_for_vic()
+{
+    return _color_ram;
+}
 
 void mem_reset()
 {

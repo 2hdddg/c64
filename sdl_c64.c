@@ -17,7 +17,7 @@ void sdl_c64_loop(struct cpu_state *state)
     window = SDL_CreateWindow("Commodore C64",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              400, 400,
+                              420, 400,
                               0 /*SDL_WINDOW_FULLSCREEN*/);
 
     SDL_Surface *surface = SDL_GetWindowSurface(window);

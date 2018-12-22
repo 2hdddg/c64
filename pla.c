@@ -128,8 +128,8 @@ static void configure()
         {
             .page_start = 0xd0,
             .num_pages = 0x400 / 0x100,
-            .set_hook = vic_mem_set,
-            .get_hook = vic_mem_get,
+            .set_hook = vic_reg_set,
+            .get_hook = vic_reg_get,
         },
         {
             .page_start = 0xd4,
