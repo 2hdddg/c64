@@ -7,6 +7,7 @@
 #include "mem.h"
 
 uint8_t _ram[65536];
+uint8_t _color_ram[1000];
 
 
 struct mem_hooks {
@@ -17,11 +18,11 @@ struct mem_hooks {
 struct mem_hooks _cpu_hooks[256];
 
 
-
 void mem_init()
 {
     memset(_cpu_hooks, 0, sizeof(_cpu_hooks));
     memset(_ram, 0, 0xffff);
+    memset(_color_ram, 0, 1000);
 }
 
 
@@ -73,6 +74,31 @@ void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
     }
 }
 
+void mem_color_ram_set(uint8_t val, uint16_t absolute,
+                       uint8_t relative, uint8_t *ram)
+{
+    uint16_t offset = absolute - 0xd800;
+
+    if (offset >= 1000) {
+        printf("Color ofset!\n");
+        return;
+    }
+    _color_ram[offset] = val;
+}
+
+uint8_t mem_color_ram_get(uint16_t absolute, uint8_t relative,
+                          uint8_t *ram)
+{
+    uint16_t offset = absolute - 0xd800;
+
+    if (offset >= 1000) {
+        printf("Color ofset get!\n");
+        return 0;
+    }
+    return _color_ram[offset];
+}
+
+
 void mem_dump_ram(int fd, uint16_t addr, uint16_t num)
 {
     char text[8];
@@ -90,3 +116,4 @@ uint8_t* mem_get_ram(uint16_t addr)
 {
     return &_ram[addr];
 }
+

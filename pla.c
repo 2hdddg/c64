@@ -140,8 +140,8 @@ static void configure()
         {
             .page_start = 0xd8,
             .num_pages = 0x400 / 0x100,
-            .set_hook = NULL,
-            .get_hook = NULL,
+            .set_hook = mem_color_ram_set,
+            .get_hook = mem_color_ram_get,
         },
         {
             .page_start = 0xdc,
