@@ -58,9 +58,15 @@ static uint8_t *_color_ram;
 
 bool _bitmap_graphics     = false;
 bool _extended_color_text = false;
-/* Screen will be blank, no dirty lines, more power to the CPU */
-bool _screen_blanking     = false;
+/* When false, screen will be blank, no dirty lines,
+ * more power to the CPU. */
+bool _display_enable      = false;
 bool _multicolor          = false;
+
+uint8_t _border_color;
+uint8_t _background_color0;
+uint8_t _background_color1;
+uint8_t _background_color2;
 
 /* Address within VIC bank that contains char pixels */
 uint16_t _char_pixels_addr  = 0x0000;
@@ -141,18 +147,18 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
 
     /* SCROLY, vertical fine scrolling and control */
     case 0x11:
-        _screen_blanking     = (val & 0b00010000) > 0;
+        _display_enable      = (val & 0b00010000) > 0;
         _bitmap_graphics     = (val & 0b00100000) > 0;
         _extended_color_text = (val & 0b01000000) > 0;
         /* TODO: More bits! */
         break;
-    case 0x16:
     /* SCROLX, horizontal fine scrolling and control */
+    case 0x16:
         _multicolor = (val & 0b00010000) > 0;
         /* TODO: More bits! */
         break;
-    case 0x18:
     /* VMCSB */
+    case 0x18:
         _char_pixels_addr  = (val & 0b00001110) * 1024;
         _video_matrix_addr = ((val & 0b11110000) >> 4) * 1024;
         break;
@@ -160,6 +166,18 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     case 0x19:
     case 0x1a:
         TRACE_NOT_IMPL(_trace_error, "raster interrupt");
+        break;
+    case 0x20:
+        _border_color = val & 0x0f;
+        break;
+    case 0x21:
+        _background_color0 = val & 0x0f;
+        break;
+    case 0x22:
+        _background_color1 = val & 0x0f;
+        break;
+    case 0x23:
+        _background_color2 = val & 0x0f;
         break;
     case 0x13:
     case 0x14:
@@ -254,8 +272,8 @@ First
 
 /* Blanking */
 #define Y_START         0
-#define Y_WINDOW_START 50
-#define Y_WINDOW_END  250
+#define Y_WINDOW_START 48
+#define Y_WINDOW_END  248
 #define Y_END         312
 /* Blanking */
 
@@ -273,7 +291,32 @@ First
 uint16_t _curr_y   = Y_END;
 uint16_t _curr_x   = X_END;
 uint16_t _blanking = 0;
+uint16_t _fetching = 0;
 
+uint8_t _curr_video_line[40];
+uint8_t _curr_color_line[40];
+
+
+static bool is_bad_line()
+{
+    const uint8_t yscroll = 0x00;
+
+    return _curr_x == X_START &&
+           _curr_y >= Y_WINDOW_START && _curr_y < Y_WINDOW_END &&
+           ((_curr_y & 0b111) == yscroll);
+}
+
+static void read_line()
+{
+    uint8_t *from;
+    uint16_t offset;
+
+    offset = ((_curr_y - Y_WINDOW_START) >> 3) * 40;
+    from = _ram + _video_matrix_addr + offset;
+    memcpy(_curr_video_line, from, 40);
+    from = _color_ram + offset;
+    memcpy(_curr_color_line, from, 40);
+}
 
 void vic_step(bool *refresh)
 {
@@ -282,6 +325,12 @@ void vic_step(bool *refresh)
     int      c;
 
     *refresh = false;
+
+    if (_fetching) {
+        _fetching--;
+        /* Can any work be done here ? */
+        return;
+    }
 
     if (_blanking) {
         _blanking--;
@@ -312,21 +361,39 @@ void vic_step(bool *refresh)
     pixels = (uint32_t*)line;
     pixels += _curr_x;
 
+    if (is_bad_line()) {
+        _fetching = 40;
+        read_line();
+    }
+
     /* Border */
     if (_curr_x < X_WINDOW_START ||
         _curr_x > X_WINDOW_END ||
         _curr_y < Y_WINDOW_START ||
         _curr_y > Y_WINDOW_END) {
         for (c = 0; c < X_PER_CYCLE; c++) {
-            pixels[c] = _colors[14];
+            pixels[c] = _colors[_border_color];
         }
         _curr_x += X_PER_CYCLE;
         return;
     }
 
     /* Inside window */
+    /* Index in fetched line */
+    int char_index = (_curr_x - X_WINDOW_START) / 8;
+    uint8_t char_code = _curr_video_line[char_index];
+    int char_line  = (_curr_y - Y_WINDOW_START) % 8;
+    //uint16_t a = _char_pixels_addr + c + y;
+    uint16_t char_offset = (char_code * (8)) + char_line;
+    uint8_t char_pixels = _char_rom[char_offset];
     for (c = 0; c < X_PER_CYCLE; c++) {
-        pixels[c] = _colors[1];
+        if (char_pixels & 0b10000000) {
+            pixels[c] = _colors[_border_color];
+        }
+        else {
+            pixels[c] = _colors[_background_color0];
+        }
+        char_pixels = char_pixels << 1;
     }
     _curr_x += X_PER_CYCLE;
 }
