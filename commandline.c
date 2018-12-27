@@ -11,6 +11,7 @@
 #include "trace.h"
 #include "commandline.h"
 #include "basic.h"
+#include "vic.h"
 
 static int  _log_fd;
 static bool _exit_loop;
@@ -142,6 +143,11 @@ static void on_basic()
     basic_stat(STDOUT_FILENO);
 }
 
+static void on_vic()
+{
+    vic_stat(STDOUT_FILENO);
+}
+
 /*
  * SYNTAX:
  *
@@ -176,6 +182,10 @@ struct command _commands[] = {
     {
         .name    = "basic",
         .handler = on_basic,
+    },
+    {
+        .name    = "vic",
+        .handler = on_vic,
     },
 };
 int _num_commands = sizeof(_commands) / sizeof(_commands[0]);

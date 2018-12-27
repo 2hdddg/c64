@@ -62,6 +62,13 @@ bool _extended_color_text = false;
  * more power to the CPU. */
 bool _display_enable      = false;
 bool _multicolor          = false;
+bool _40_columns          = false;
+bool _reset               = false;
+
+uint8_t _scroll_y;
+uint8_t _scroll_x;
+
+uint16_t _raster_compare = 0;
 
 uint8_t _border_color;
 uint8_t _background_color0;
@@ -77,6 +84,21 @@ uint16_t _video_matrix_addr = 0x0000;
 static uint32_t *_screen;
 static uint32_t _pitch;
 
+void vic_stat()
+{
+    printf("VIC \n");
+    printf("Display enable : %s\n", _display_enable ? "yes" : "no");
+    printf("Bitmap graphics: %s\n", _bitmap_graphics ? "yes" : "no");
+    printf("Extended color : %s\n", _extended_color_text ? "yes" : "no");
+    printf("Multicolor     : %s\n", _multicolor ? "yes" : "no");
+    printf("Video matrix   : %04x\n", _video_matrix_addr);
+    printf("Char pixels    : %04x\n", _char_pixels_addr);
+    printf("Scroll y       : %02x\n", _scroll_y);
+    printf("Scroll x       : %02x\n", _scroll_x);
+    printf("Raster compare : %04x\n", _raster_compare);
+    printf("40 columns     : %s\n", _40_columns ? "yes" : "no");
+    printf("Reset          : %s\n", _reset ? "yes" : "no");
+}
 
 void vic_init(uint8_t *char_rom)
 {
@@ -150,19 +172,31 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         _display_enable      = (val & 0b00010000) > 0;
         _bitmap_graphics     = (val & 0b00100000) > 0;
         _extended_color_text = (val & 0b01000000) > 0;
-        /* TODO: More bits! */
+        _scroll_y            = (val & 0b00000111);
+        if (val & 0b10000000) {
+            /* Bit 8 of raster compare */
+            _raster_compare |= 0x100;
+        }
+        else {
+            _raster_compare &= 0b011111111;
+        }
+        break;
+    case 0x12:
+    /* RASTER */
+        _raster_compare = (_raster_compare & 0xff00) | val;
         break;
     /* SCROLX, horizontal fine scrolling and control */
     case 0x16:
+        _40_columns = (val & 0b00000001) > 0;
         _multicolor = (val & 0b00010000) > 0;
-        /* TODO: More bits! */
+        _scroll_x   = (val & 0b00000111);
+        _reset      = (val & 0b00100000) > 0;
         break;
     /* VMCSB */
     case 0x18:
         _char_pixels_addr  = (val & 0b00001110) * 1024;
         _video_matrix_addr = ((val & 0b11110000) >> 4) * 1024;
         break;
-    case 0x12:
     case 0x19:
     case 0x1a:
         TRACE_NOT_IMPL(_trace_error, "raster interrupt");
@@ -383,7 +417,6 @@ void vic_step(bool *refresh)
     int char_index = (_curr_x - X_WINDOW_START) / 8;
     uint8_t char_code = _curr_video_line[char_index];
     int char_line  = (_curr_y - Y_WINDOW_START) % 8;
-    //uint16_t a = _char_pixels_addr + c + y;
     uint16_t char_offset = (char_code * (8)) + char_line;
     uint8_t char_pixels = _char_rom[char_offset];
     for (c = 0; c < X_PER_CYCLE; c++) {

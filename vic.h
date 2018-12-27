@@ -33,3 +33,5 @@ void vic_step(bool *refresh);
 
 //void vic_trace_register_set(int fd);
 //void vic_trace_register_get(int fd);
+//
+void vic_stat();
