@@ -100,8 +100,8 @@ const uint16_t _x_visible_end   = 400;
 const uint16_t _y_blanking      = 2;
 const uint16_t _x_blanking      = 2;
 /* First/last line of drawable area */
-const uint16_t _y_drawable_start = 48;
-const uint16_t _y_drawable_end   = 248;
+const uint16_t _y_drawable_start = 49;
+const uint16_t _y_drawable_end   = 249;
 /* First/last column of drawable area */
 const uint16_t _x_drawable_start = 40;
 const uint16_t _x_drawable_end   = 360;
@@ -110,6 +110,9 @@ uint16_t _curr_y        = 312;
 uint16_t _curr_x        = 360;
 uint16_t _curr_blanking = 0;
 uint16_t _curr_fetching = 0;
+
+uint8_t _x_drawable_left_border;
+uint8_t _x_drawable_right_border;
 
 /* Fetched during bad line */
 uint8_t _curr_video_line[40];
@@ -136,7 +139,11 @@ void vic_stat()
 
 static void _setup_drawable_area()
 {
+    _x_drawable_left_border = 0;
+    _x_drawable_right_border = 0;
     if (!_40_columns) {
+        _x_drawable_left_border = 8;
+        _x_drawable_right_border = 8;
     }
 
     if (!_25_rows) {
@@ -393,11 +400,9 @@ First
 
 static bool is_bad_line()
 {
-    const uint8_t yscroll = 0x00;
-
     return _curr_x == _x_visible_start &&
            _curr_y >= _y_drawable_start && _curr_y < _y_drawable_end &&
-           ((_curr_y & 0b111) == yscroll);
+           ((_curr_y & 0b111) == _scroll_y);
 }
 
 /* Fills internal 40*12 bits video matrix/color line buffer.
@@ -490,7 +495,7 @@ void vic_step(bool *refresh)
 
     int c = X_PER_CYCLE;
     /* Left border */
-    while (_curr_x < _x_drawable_start && c) {
+    while (_curr_x < (_x_drawable_start + _x_drawable_left_border) && c) {
         *pixels = _colors[_border_color];
         pixels++;
         c--;
@@ -502,12 +507,13 @@ void vic_step(bool *refresh)
         /* Index in fetched line */
         int char_index = (_curr_x - _x_drawable_start) / 8;
         uint8_t char_code = _curr_video_line[char_index];
-        int char_line  = (_curr_y - _y_drawable_start) % 8;
+        int char_line  = (_curr_y - _y_drawable_start - _scroll_y) % 8;
         uint16_t char_offset = (char_code * (8)) + char_line;
         uint8_t char_pixels = g_access(char_offset);
 
         while (_curr_x >= _x_drawable_start &&
-               _curr_x <= _x_drawable_end && c) {
+               _curr_x <= (_x_drawable_end - _x_drawable_right_border) &&
+               c) {
             if (char_pixels & 0b10000000) {
                 *pixels = _colors[_curr_color_line[char_index] & 0x7f];
             }
@@ -522,7 +528,7 @@ void vic_step(bool *refresh)
     }
 
     /* Right border */
-    while (_curr_x > _x_drawable_end && c) {
+    while (_curr_x > (_x_drawable_end - _x_drawable_right_border) && c) {
         *pixels = _colors[_border_color];
         pixels++;
         c--;
