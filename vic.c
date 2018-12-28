@@ -57,24 +57,29 @@ static uint8_t *_char_rom;
 static uint8_t *_ram;
 static uint8_t *_color_ram;
 
-bool _bitmap_graphics     = false;
-bool _extended_color_text = false;
+bool _bitmap_graphics;
+bool _extended_color_text;
 /* When false, screen will be blank, no dirty lines,
  * more power to the CPU. */
-bool _display_enable      = false;
-bool _multicolor          = false;
-bool _40_columns          = false;
-bool _reset               = false;
+bool _display_enable;
+bool _multicolor;
+bool _40_columns;
+bool _25_rows;
+bool _reset;
 
 uint8_t _scroll_y;
 uint8_t _scroll_x;
 
 uint16_t _raster_compare = 0;
+uint8_t  _interrupt_mask = 0;
+uint8_t  _interrupt_flag = 0;
 
 uint8_t _border_color;
 uint8_t _background_color0;
 uint8_t _background_color1;
 uint8_t _background_color2;
+
+uint8_t _raw_regs[0x40];
 
 /* Address within VIC bank that contains char pixels */
 uint16_t _char_pixels_addr  = 0x0000;
@@ -84,6 +89,31 @@ uint16_t _video_matrix_addr = 0x0000;
 /* Output */
 static uint32_t *_screen;
 static uint32_t _pitch;
+
+/* First/last line of visible area */
+const uint16_t _y_visible_start = 0;
+const uint16_t _y_visible_end   = 312;
+/* First/last column of visible area */
+const uint16_t _x_visible_start = 0;
+const uint16_t _x_visible_end   = 400;
+/* Number of blanking before restart */
+const uint16_t _y_blanking      = 2;
+const uint16_t _x_blanking      = 2;
+/* First/last line of drawable area */
+const uint16_t _y_drawable_start = 48;
+const uint16_t _y_drawable_end   = 248;
+/* First/last column of drawable area */
+const uint16_t _x_drawable_start = 40;
+const uint16_t _x_drawable_end   = 360;
+
+uint16_t _curr_y        = 312;
+uint16_t _curr_x        = 360;
+uint16_t _curr_blanking = 0;
+uint16_t _curr_fetching = 0;
+
+/* Fetched during bad line */
+uint8_t _curr_video_line[40];
+uint8_t _curr_color_line[40];
 
 void vic_stat()
 {
@@ -98,13 +128,40 @@ void vic_stat()
     printf("Scroll x       : %02x\n", _scroll_x);
     printf("Raster compare : %04x\n", _raster_compare);
     printf("40 columns     : %s\n", _40_columns ? "yes" : "no");
+    printf("25 rows        : %s\n", _25_rows ? "yes" : "no");
     printf("Reset          : %s\n", _reset ? "yes" : "no");
+    printf("Interrupt mask : %02x\n", _interrupt_mask);
+    printf("Interrupt flag : %02x\n", _interrupt_flag);
+}
+
+static void _setup_drawable_area()
+{
+    if (!_40_columns) {
+    }
+
+    if (!_25_rows) {
+    }
+}
+
+static void vic_reset()
+{
+    _bitmap_graphics     = false;
+    _extended_color_text = false;
+    _display_enable      = false;
+    _multicolor          = false;
+    _40_columns          = false;
+    _25_rows             = false;
+    _reset               = false;
+
+    _setup_drawable_area();
 }
 
 void vic_init(uint8_t *char_rom)
 {
     _char_rom = char_rom;
     _ram = mem_get_ram(0);
+    memset(_raw_regs, 0, 0x40);
+    vic_reset();
 
     _trace_set_reg = trace_add_point("VIC", "set reg");
     _trace_get_reg = trace_add_point("VIC", "get reg");
@@ -121,8 +178,15 @@ void vic_screen(uint32_t *screen, uint32_t pitch)
 uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
-    TRACE(_trace_error, "get reg %04x not handled", absolute);
-    return 0;
+    uint16_t offset = (absolute - 0xd00) % 0x40;
+
+    switch (offset) {
+    case 0x18:
+        return _raw_regs[offset];
+    default:
+        TRACE(_trace_error, "get reg %04x not handled", absolute);
+        return _raw_regs[offset];
+    }
 }
 
 void vic_reg_set(uint8_t val, uint16_t absolute,
@@ -166,15 +230,17 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     case 0x2c:
     case 0x2d:
     case 0x2e:
+        _raw_regs[offset] = val;
         TRACE_NOT_IMPL(_trace_error, "sprites");
         break;
 
     /* SCROLY, vertical fine scrolling and control */
     case 0x11:
+        _scroll_y            = (val & 0b00000111);
+        _25_rows             = (val & 0b00001000) > 0;
         _display_enable      = (val & 0b00010000) > 0;
         _bitmap_graphics     = (val & 0b00100000) > 0;
         _extended_color_text = (val & 0b01000000) > 0;
-        _scroll_y            = (val & 0b00000111);
         if (val & 0b10000000) {
             /* Bit 8 of raster compare */
             _raster_compare |= 0x100;
@@ -182,6 +248,8 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         else {
             _raster_compare &= 0b011111111;
         }
+        _raw_regs[offset] = val;
+        _setup_drawable_area();
         break;
     case 0x12:
     /* RASTER */
@@ -189,34 +257,47 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         break;
     /* SCROLX, horizontal fine scrolling and control */
     case 0x16:
-        _40_columns = (val & 0b00000001) > 0;
+        _40_columns = (val & 0b00001000) > 0;
         _multicolor = (val & 0b00010000) > 0;
         _scroll_x   = (val & 0b00000111);
         _reset      = (val & 0b00100000) > 0;
+        _setup_drawable_area();
+        _raw_regs[offset] = val;
         break;
     /* VMCSB */
     case 0x18:
         _char_pixels_addr  = (val & 0b00001110) * 1024;
         _video_matrix_addr = ((val & 0b11110000) >> 4) * 1024;
+        _raw_regs[offset] = val;
         break;
+    /* VICIRQ */
     case 0x19:
+        /* Read only ? */
+        break;
+    /* IRQMASK */
     case 0x1a:
-        TRACE_NOT_IMPL(_trace_error, "raster interrupt");
+        _interrupt_mask = val;
+        _raw_regs[offset] = val;
         break;
     case 0x20:
         _border_color = val & 0x0f;
+        _raw_regs[offset] = val;
         break;
     case 0x21:
         _background_color0 = val & 0x0f;
+        _raw_regs[offset] = val;
         break;
     case 0x22:
         _background_color1 = val & 0x0f;
+        _raw_regs[offset] = val;
         break;
     case 0x23:
         _background_color2 = val & 0x0f;
+        _raw_regs[offset] = val;
         break;
     case 0x13:
     case 0x14:
+        _raw_regs[offset] = val;
         TRACE_NOT_IMPL(_trace_error, "light pen");
         break;
 
@@ -224,7 +305,6 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         TRACE(_trace_error, "set reg %04x not handled", absolute);
         break;
     }
-
 }
 
 void vic_set_bank(enum vic_bank bank)
@@ -306,43 +386,17 @@ Visible pixels/line: 403
 First vblank line:   300
 Last vblank line:     15
 First 
-
-
 */
 
-/* Blanking */
-#define Y_START         0
-#define Y_WINDOW_START 48
-#define Y_WINDOW_END  248
-#define Y_END         312
-/* Blanking */
-
-/* Blanking */
-#define X_START          0
-#define X_WINDOW_START  40
-#define X_WINDOW_END   360
-#define X_END          400
-/* Blanking */
-
 #define X_PER_CYCLE 8
-#define Y_BLANKING 2
-#define X_BLANKING 2
-
-uint16_t _curr_y   = Y_END;
-uint16_t _curr_x   = X_END;
-uint16_t _blanking = 0;
-uint16_t _fetching = 0;
-
-uint8_t _curr_video_line[40];
-uint8_t _curr_color_line[40];
 
 
 static bool is_bad_line()
 {
     const uint8_t yscroll = 0x00;
 
-    return _curr_x == X_START &&
-           _curr_y >= Y_WINDOW_START && _curr_y < Y_WINDOW_END &&
+    return _curr_x == _x_visible_start &&
+           _curr_y >= _y_drawable_start && _curr_y < _y_drawable_end &&
            ((_curr_y & 0b111) == yscroll);
 }
 
@@ -354,7 +408,7 @@ static void c_access()
     uint16_t offset;
 
     /* Video matrix / chars */
-    offset = ((_curr_y - Y_WINDOW_START) >> 3) * 40;
+    offset = ((_curr_y - _y_drawable_start) >> 3) * 40;
     from = _ram + _bank_offset + _video_matrix_addr + offset;
     memcpy(_curr_video_line, from, 40);
 
@@ -380,78 +434,98 @@ void vic_step(bool *refresh)
 {
     uint8_t  *line = (uint8_t*)_screen;
     uint32_t *pixels;
-    int      c;
 
     *refresh = false;
 
-    if (_fetching) {
-        _fetching--;
-        /* Can any work be done here ? */
+    if (_curr_blanking) {
+        _curr_blanking--;
         return;
     }
 
-    if (_blanking) {
-        _blanking--;
-        return;
-    }
-
-    if (_curr_x > X_END) {
+    /* New raster line? */
+    if (_curr_x > _x_visible_end) {
         _curr_y++;
-        _curr_x   = X_START;
-        _blanking = X_BLANKING;
-    }
-    if (_blanking) {
-        _blanking--;
+        _curr_x = _x_visible_start;
+        _curr_blanking = _x_blanking - 1;
         return;
     }
 
-    if (_curr_y > Y_END) {
-        _curr_y   = Y_START;
-        _blanking = Y_BLANKING;
+    /* Last raster line? */
+    if (_curr_y > _y_visible_end) {
+        _curr_y = _y_visible_start;
+        _curr_blanking = _y_blanking - 1;
         *refresh  = true;
-    }
-    if (_blanking) {
-        _blanking--;
         return;
+    }
+
+    /* CPU is stalled while fetching */
+    if (_curr_fetching) {
+        _curr_fetching--;
+    }
+    /* Check if another 40 chars + colors need to be fetched */
+    else if (is_bad_line()) {
+        _curr_fetching = 40;
+        c_access();
     }
 
     line  += (_pitch * _curr_y);
     pixels = (uint32_t*)line;
     pixels += _curr_x;
 
-    if (is_bad_line()) {
-    /* TODO: Interleave ! */
-        _fetching = 40;
-        c_access();
-    }
-
-    /* Border */
-    if (_curr_x < X_WINDOW_START ||
-        _curr_x > X_WINDOW_END ||
-        _curr_y < Y_WINDOW_START ||
-        _curr_y > Y_WINDOW_END) {
-        for (c = 0; c < X_PER_CYCLE; c++) {
-            pixels[c] = _colors[_border_color];
-        }
+    /* Top/bottom border */
+    if (_curr_y < _y_drawable_start ||
+        _curr_y > _y_drawable_end) {
+        /* Assumes X_PER_CYCLE == 8 */
+        pixels[0] = _colors[_border_color];
+        pixels[1] = _colors[_border_color];
+        pixels[2] = _colors[_border_color];
+        pixels[3] = _colors[_border_color];
+        pixels[4] = _colors[_border_color];
+        pixels[5] = _colors[_border_color];
+        pixels[6] = _colors[_border_color];
+        pixels[7] = _colors[_border_color];
         _curr_x += X_PER_CYCLE;
         return;
     }
 
-    /* Inside window */
-    /* Index in fetched line */
-    int char_index = (_curr_x - X_WINDOW_START) / 8;
-    uint8_t char_code = _curr_video_line[char_index];
-    int char_line  = (_curr_y - Y_WINDOW_START) % 8;
-    uint16_t char_offset = (char_code * (8)) + char_line;
-    uint8_t char_pixels = g_access(char_offset);
-    for (c = 0; c < X_PER_CYCLE; c++) {
-        if (char_pixels & 0b10000000) {
-            pixels[c] = _colors[_curr_color_line[char_index] & 0x7f];
-        }
-        else {
-            pixels[c] = _colors[_background_color0];
-        }
-        char_pixels = char_pixels << 1;
+    int c = X_PER_CYCLE;
+    /* Left border */
+    while (_curr_x < _x_drawable_start && c) {
+        *pixels = _colors[_border_color];
+        pixels++;
+        c--;
+        _curr_x++;
     }
-    _curr_x += X_PER_CYCLE;
+
+    if (c) {
+        /* Inside window */
+        /* Index in fetched line */
+        int char_index = (_curr_x - _x_drawable_start) / 8;
+        uint8_t char_code = _curr_video_line[char_index];
+        int char_line  = (_curr_y - _y_drawable_start) % 8;
+        uint16_t char_offset = (char_code * (8)) + char_line;
+        uint8_t char_pixels = g_access(char_offset);
+
+        while (_curr_x >= _x_drawable_start &&
+               _curr_x <= _x_drawable_end && c) {
+            if (char_pixels & 0b10000000) {
+                *pixels = _colors[_curr_color_line[char_index] & 0x7f];
+            }
+            else {
+                *pixels = _colors[_background_color0];
+            }
+            pixels++;
+            char_pixels = char_pixels << 1;
+            _curr_x++;
+            c--;
+        }
+    }
+
+    /* Right border */
+    while (_curr_x > _x_drawable_end && c) {
+        *pixels = _colors[_border_color];
+        pixels++;
+        c--;
+        _curr_x++;
+    }
 }
