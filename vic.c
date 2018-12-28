@@ -49,8 +49,9 @@ static struct trace_point *_trace_get_reg = NULL;
 static struct trace_point *_trace_error   = NULL;
 static struct trace_point *_trace_bank    = NULL;
 
-static enum vic_bank _bank = 0x00;
-
+static enum vic_bank _bank       = 0x00;
+static uint16_t _bank_offset     = 0x0000;
+static uint16_t _char_rom_offset = 0x0000;
 
 static uint8_t *_char_rom;
 static uint8_t *_ram;
@@ -103,6 +104,7 @@ void vic_stat()
 void vic_init(uint8_t *char_rom)
 {
     _char_rom = char_rom;
+    _ram = mem_get_ram(0);
 
     _trace_set_reg = trace_add_point("VIC", "set reg");
     _trace_get_reg = trace_add_point("VIC", "get reg");
@@ -227,19 +229,23 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
 
 void vic_set_bank(enum vic_bank bank)
 {
-_bank = bank;
+    _bank = bank;
     switch (_bank) {
     case vic_bank_0:
-        _ram = mem_get_ram_for_vic(0x0000);
+        _bank_offset     = 0x0000;
+        _char_rom_offset = 0x1000;
         break;
     case vic_bank_1:
-        _ram = mem_get_ram_for_vic(0x4000);
+        _bank_offset     = 0x4000;
+        _char_rom_offset = 0x0000;
         break;
     case vic_bank_2:
-        _ram = mem_get_ram_for_vic(0x8000);
+        _bank_offset     = 0x8000;
+        _char_rom_offset = 0x9000;
         break;
     case vic_bank_3:
-        _ram = mem_get_ram_for_vic(0xc000);
+        _bank_offset     = 0xc000;
+        _char_rom_offset = 0x0000;
         break;
     }
     _color_ram = mem_get_color_ram_for_vic();
@@ -340,16 +346,34 @@ static bool is_bad_line()
            ((_curr_y & 0b111) == yscroll);
 }
 
-static void read_line()
+/* Fills internal 40*12 bits video matrix/color line buffer.
+ * Bad line, stalls the CPU during these access. */
+static void c_access()
 {
     uint8_t *from;
     uint16_t offset;
 
+    /* Video matrix / chars */
     offset = ((_curr_y - Y_WINDOW_START) >> 3) * 40;
-    from = _ram + _video_matrix_addr + offset;
+    from = _ram + _bank_offset + _video_matrix_addr + offset;
     memcpy(_curr_video_line, from, 40);
+
+    /* Color data */
     from = _color_ram + offset;
     memcpy(_curr_color_line, from, 40);
+}
+
+/* Reads pixel data, char rom or bitmap */
+static inline uint8_t g_access(uint16_t offset)
+{
+    uint16_t addr = _char_pixels_addr + offset;
+
+    if (_char_rom_offset > 0 &&
+        addr >= _char_rom_offset &&
+        addr < _char_rom_offset + 0x1000) {
+        return _char_rom[offset];
+    }
+    return _ram[offset];
 }
 
 void vic_step(bool *refresh)
@@ -396,8 +420,9 @@ void vic_step(bool *refresh)
     pixels += _curr_x;
 
     if (is_bad_line()) {
+    /* TODO: Interleave ! */
         _fetching = 40;
-        read_line();
+        c_access();
     }
 
     /* Border */
@@ -418,10 +443,10 @@ void vic_step(bool *refresh)
     uint8_t char_code = _curr_video_line[char_index];
     int char_line  = (_curr_y - Y_WINDOW_START) % 8;
     uint16_t char_offset = (char_code * (8)) + char_line;
-    uint8_t char_pixels = _char_rom[char_offset];
+    uint8_t char_pixels = g_access(char_offset);
     for (c = 0; c < X_PER_CYCLE; c++) {
         if (char_pixels & 0b10000000) {
-            pixels[c] = _colors[_border_color];
+            pixels[c] = _colors[_curr_color_line[char_index] & 0x7f];
         }
         else {
             pixels[c] = _colors[_background_color0];
