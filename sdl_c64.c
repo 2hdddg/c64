@@ -251,7 +251,7 @@ void sdl_c64_loop(struct cpu_state *state)
         if (refresh) {
             clock_gettime(CLOCK_MONOTONIC, &stop);
             SDL_UpdateWindowSurface(window);
-            //printf("Num ms %ld\n", (stop.tv_nsec - start.tv_nsec)/1000000);
+            printf("Num ms %ld\n", (stop.tv_nsec - start.tv_nsec)/1000000);
             clock_gettime(CLOCK_MONOTONIC, &start);
         }
     }

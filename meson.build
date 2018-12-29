@@ -44,4 +44,6 @@ shared_library('suite_cia_timer', [
     'test/suite_cia_timer.c', 'cia_timer.c'])
 shared_library('suite_keyboard', [
     'test/suite_keyboard.c', 'keyboard.c', 'trace.c'])
+shared_library('suite_vic', [
+    'test/suite_vic.c', 'vic.c', 'trace.c'])
 

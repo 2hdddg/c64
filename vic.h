@@ -4,7 +4,9 @@
 
 #include "mem.h"
 
-void vic_init();
+void vic_init(uint8_t *char_rom,
+              uint8_t *ram,
+              uint8_t *color_ram);
 
 void vic_screen(uint32_t *screen, uint32_t pitch);
 

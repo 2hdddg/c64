@@ -57,7 +57,9 @@ int setup(struct cpu_state *state)
     cpu_init(mem_get_for_cpu, mem_set_for_cpu);
     cia1_init();
     cia2_init();
-    vic_init(_chargen_rom);
+    vic_init(_chargen_rom,
+             mem_get_ram(0),
+             mem_get_color_ram_for_vic());
 
     mem_reset();
     cia1_reset();

@@ -166,10 +166,14 @@ static void vic_reset()
     _setup_drawable_area();
 }
 
-void vic_init(uint8_t *char_rom)
+void vic_init(uint8_t *char_rom,
+              uint8_t *ram,
+              uint8_t *color_ram)
 {
-    _char_rom = char_rom;
-    _ram = mem_get_ram(0);
+    _char_rom  = char_rom;
+    _ram       = ram;
+    _color_ram = color_ram;
+
     memset(_raw_regs, 0, 0x40);
     vic_reset();
 
@@ -338,7 +342,6 @@ void vic_set_bank(enum vic_bank bank)
         _char_rom_offset = 0x0000;
         break;
     }
-    _color_ram = mem_get_color_ram_for_vic();
     TRACE(_trace_bank, "select %01x", bank);
 }
 
