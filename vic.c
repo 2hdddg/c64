@@ -107,9 +107,10 @@ uint16_t _x_drawable_start;
 uint16_t _x_drawable_end;
 
 uint16_t _curr_y        = 312;
-uint16_t _curr_x        = 360;
+uint16_t _curr_x        = 401;
 uint16_t _curr_blanking = 0;
 uint16_t _curr_fetching = 0;
+uint32_t *_curr_pixel;
 
 /* Fetched during bad line */
 #define LINE_OFFSET 3
@@ -439,9 +440,8 @@ static inline uint8_t g_access(uint16_t offset)
 
 void vic_step(bool *refresh)
 {
-    uint8_t  *line = (uint8_t*)_screen;
-    uint32_t *pixels;
-
+    uint32_t color_border = _colors[_border_color];
+    int c = X_PER_CYCLE;
     *refresh = false;
 
     if (_curr_blanking) {
@@ -454,6 +454,7 @@ void vic_step(bool *refresh)
         _curr_y++;
         _curr_x = _x_visible_start;
         _curr_blanking = _x_blanking - 1;
+        _curr_pixel = (uint32_t*)(((uint8_t*)_screen) + _pitch * _curr_y);
         return;
     }
 
@@ -475,17 +476,12 @@ void vic_step(bool *refresh)
         c_access();
     }
 
-    line  += (_pitch * _curr_y);
-    pixels = (uint32_t*)line;
-    pixels += _curr_x;
-    int c = X_PER_CYCLE;
-
     /* Top/bottom border */
     if (_curr_y < _y_drawable_start ||
         _curr_y >= _y_drawable_end) {
         while (c--) {
-            *pixels = _colors[_border_color];
-            pixels++;
+            *_curr_pixel = color_border;
+            _curr_pixel++;
         }
         _curr_x += X_PER_CYCLE;
         return;
@@ -493,8 +489,8 @@ void vic_step(bool *refresh)
 
     /* Left border */
     while (_curr_x < _x_drawable_start && c) {
-        *pixels = _colors[_border_color];
-        pixels++;
+        *_curr_pixel = color_border;
+        _curr_pixel++;
         c--;
         _curr_x++;
     }
@@ -513,12 +509,12 @@ void vic_step(bool *refresh)
         while (c &&
                _curr_x <= _x_drawable_end) {
             if (char_pixels & 0b10000000) {
-                *pixels = color_fg;
+                *_curr_pixel = color_fg;
             }
             else {
-                *pixels = color_bg;
+                *_curr_pixel = color_bg;
             }
-            pixels++;
+            _curr_pixel++;
             char_pixels = char_pixels << 1;
             _curr_x++;
             c--;
@@ -528,8 +524,8 @@ void vic_step(bool *refresh)
     /* Right border */
     if (c && _curr_x > _x_drawable_end) {
         while (c) {
-            *pixels = _colors[_border_color];
-            pixels++;
+            *_curr_pixel = color_border;
+            _curr_pixel++;
             c--;
             _curr_x++;
         }
