@@ -100,8 +100,8 @@ const uint16_t _x_visible_end   = 400;
 const uint16_t _y_blanking      = 2;
 const uint16_t _x_blanking      = 2;
 /* First/last line of drawable area */
-const uint16_t _y_drawable_start = 49;
-const uint16_t _y_drawable_end   = 249;
+const uint16_t _y_drawable_start = 51;
+const uint16_t _y_drawable_end   = 251;
 /* First/last column of drawable area */
 const uint16_t _x_drawable_start = 40;
 const uint16_t _x_drawable_end   = 360;
@@ -476,24 +476,19 @@ void vic_step(bool *refresh)
     line  += (_pitch * _curr_y);
     pixels = (uint32_t*)line;
     pixels += _curr_x;
+    int c = X_PER_CYCLE;
 
     /* Top/bottom border */
     if (_curr_y < _y_drawable_start ||
         _curr_y > _y_drawable_end) {
-        /* Assumes X_PER_CYCLE == 8 */
-        pixels[0] = _colors[_border_color];
-        pixels[1] = _colors[_border_color];
-        pixels[2] = _colors[_border_color];
-        pixels[3] = _colors[_border_color];
-        pixels[4] = _colors[_border_color];
-        pixels[5] = _colors[_border_color];
-        pixels[6] = _colors[_border_color];
-        pixels[7] = _colors[_border_color];
+        while (c--) {
+            *pixels = _colors[_border_color];
+            pixels++;
+        }
         _curr_x += X_PER_CYCLE;
         return;
     }
 
-    int c = X_PER_CYCLE;
     /* Left border */
     while (_curr_x < (_x_drawable_start + _x_drawable_left_border) && c) {
         *pixels = _colors[_border_color];
@@ -502,18 +497,17 @@ void vic_step(bool *refresh)
         _curr_x++;
     }
 
-    if (c) {
+    if (c && _curr_x >= _x_drawable_start) {
         /* Inside window */
-        /* Index in fetched line */
-        int char_index = (_curr_x - _x_drawable_start) / 8;
-        uint8_t char_code = _curr_video_line[char_index];
-        int char_line  = (_curr_y - _y_drawable_start - _scroll_y) % 8;
+        int      char_index  = (_curr_x - _x_drawable_start) / 8;
+        uint8_t  char_code   = _curr_video_line[char_index];
+        int      char_line   = (_curr_y - _scroll_y) % 8;
         uint16_t char_offset = (char_code * (8)) + char_line;
-        uint8_t char_pixels = g_access(char_offset);
+        uint8_t  char_pixels = g_access(char_offset);
+        uint16_t border      = _x_drawable_end - _x_drawable_right_border;
 
-        while (_curr_x >= _x_drawable_start &&
-               _curr_x <= (_x_drawable_end - _x_drawable_right_border) &&
-               c) {
+        while (c &&
+               _curr_x <= border) {
             if (char_pixels & 0b10000000) {
                 *pixels = _colors[_curr_color_line[char_index] & 0x7f];
             }
@@ -528,10 +522,12 @@ void vic_step(bool *refresh)
     }
 
     /* Right border */
-    while (_curr_x > (_x_drawable_end - _x_drawable_right_border) && c) {
-        *pixels = _colors[_border_color];
-        pixels++;
-        c--;
-        _curr_x++;
+    if (c && _curr_x > (_x_drawable_end - _x_drawable_right_border)) {
+        while (c) {
+            *pixels = _colors[_border_color];
+            pixels++;
+            c--;
+            _curr_x++;
+        }
     }
 }
