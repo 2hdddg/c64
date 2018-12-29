@@ -9,40 +9,8 @@
  * PAL version (6569).
  */
 
-static uint32_t _colors[] = {
-    /* Black */
-    0x00000000,
-    /* White */
-    0x00FFFFFF,
-    /* Red */
-    0x0068372B,
-    /* Cyan */
-    0x0070A4B2,
-    /* Violet/purple */
-    0x006F3D86,
-    /* Green */
-    0x00588D43,
-    /* Blue */
-    0x00352879,
-    /* Yellow */
-    0x00B8C76F,
-    /* Orange */
-    0x006F4F25,
-    /* Brown */
-    0x00433900,
-    /* Light red */
-    0x009A6759,
-    /* Dark grey, grey 1 */
-    0x00444444,
-    /* Grey 2 */
-    0x006C6C6C,
-    /* Light green */
-    0x009AD284,
-    /* Light blue */
-    0x006C5EB5,
-    /* Light grey, grey 3 */
-    0x00959595,
-};
+/* Defined in vic_palette.c */
+uint32_t palette[16];
 
 static struct trace_point *_trace_set_reg = NULL;
 static struct trace_point *_trace_get_reg = NULL;
@@ -74,11 +42,12 @@ uint16_t _raster_compare = 0;
 uint8_t  _interrupt_mask = 0;
 uint8_t  _interrupt_flag = 0;
 
-uint8_t _border_color;
-uint8_t _background_color0;
-uint8_t _background_color1;
-uint8_t _background_color2;
+uint32_t _border_color;
+uint32_t _background_color0;
+uint32_t _background_color1;
+uint32_t _background_color2;
 
+/* For easier get impl */
 uint8_t _raw_regs[0x40];
 
 /* Address within VIC bank that contains char pixels */
@@ -99,10 +68,12 @@ const uint16_t _x_visible_end   = 400;
 /* Number of blanking before restart */
 const uint16_t _y_blanking      = 2;
 const uint16_t _x_blanking      = 2;
-/* First/last line of drawable area */
+/* First/last line of drawable area.
+ * Changed when toggling between 24/25 rows. */
 uint16_t _y_drawable_start;
 uint16_t _y_drawable_end;
-/* First/last column of drawable area */
+/* First/last column of drawable area.
+ * Changed when toggling between 38/40 columns. */
 uint16_t _x_drawable_start;
 uint16_t _x_drawable_end;
 
@@ -112,8 +83,9 @@ uint16_t _curr_blanking = 0;
 uint16_t _curr_fetching = 0;
 uint32_t *_curr_pixel;
 
-/* Fetched during bad line */
+/* Offset corresponds to _x_visible_start of 24 pixels */
 #define LINE_OFFSET 3
+/* Filled during bad line */
 uint8_t _curr_video_line[40+LINE_OFFSET];
 uint8_t _curr_color_line[40+LINE_OFFSET];
 
@@ -195,8 +167,8 @@ uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
     uint16_t offset = (absolute - 0xd00) % 0x40;
 
     switch (offset) {
-    case 0x18:
-        return _raw_regs[offset];
+    case 0x12:
+        return _curr_y & 0xff;
     default:
         TRACE(_trace_error, "get reg %04x not handled", absolute);
         return _raw_regs[offset];
@@ -207,6 +179,9 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
     uint16_t offset = (absolute - 0xd00) % 0x40;
+
+    /* Save for fallback impl of get */
+    _raw_regs[offset] = val;
 
     switch (offset) {
     /* 0x00-0x10 Sprites */
@@ -244,7 +219,6 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     case 0x2c:
     case 0x2d:
     case 0x2e:
-        _raw_regs[offset] = val;
         TRACE_NOT_IMPL(_trace_error, "sprites");
         break;
 
@@ -262,7 +236,6 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         else {
             _raster_compare &= 0b011111111;
         }
-        _raw_regs[offset] = val;
         _setup_drawable_area();
         break;
     case 0x12:
@@ -276,13 +249,11 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         _scroll_x   = (val & 0b00000111);
         _reset      = (val & 0b00100000) > 0;
         _setup_drawable_area();
-        _raw_regs[offset] = val;
         break;
     /* VMCSB */
     case 0x18:
         _char_pixels_addr  = (val & 0b00001110) * 1024;
         _video_matrix_addr = ((val & 0b11110000) >> 4) * 1024;
-        _raw_regs[offset] = val;
         break;
     /* VICIRQ */
     case 0x19:
@@ -291,27 +262,21 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     /* IRQMASK */
     case 0x1a:
         _interrupt_mask = val;
-        _raw_regs[offset] = val;
         break;
     case 0x20:
-        _border_color = val & 0x0f;
-        _raw_regs[offset] = val;
+        _border_color = palette[val & 0x0f];
         break;
     case 0x21:
-        _background_color0 = val & 0x0f;
-        _raw_regs[offset] = val;
+        _background_color0 = palette[val & 0x0f];
         break;
     case 0x22:
-        _background_color1 = val & 0x0f;
-        _raw_regs[offset] = val;
+        _background_color1 = palette[val & 0x0f];
         break;
     case 0x23:
-        _background_color2 = val & 0x0f;
-        _raw_regs[offset] = val;
+        _background_color2 = palette[val & 0x0f];
         break;
     case 0x13:
     case 0x14:
-        _raw_regs[offset] = val;
         TRACE_NOT_IMPL(_trace_error, "light pen");
         break;
 
@@ -443,7 +408,6 @@ static inline uint8_t g_access(uint16_t offset)
 
 void vic_step(bool *refresh)
 {
-    uint32_t color_border = _colors[_border_color];
     int c = X_PER_CYCLE;
     *refresh = false;
 
@@ -483,7 +447,7 @@ void vic_step(bool *refresh)
     if (_curr_y < _y_drawable_start ||
         _curr_y >= _y_drawable_end) {
         while (c--) {
-            *_curr_pixel = color_border;
+            *_curr_pixel = _border_color;
             _curr_pixel++;
         }
         _curr_x += X_PER_CYCLE;
@@ -492,7 +456,7 @@ void vic_step(bool *refresh)
 
     /* Left border */
     while (_curr_x < _x_drawable_start && c) {
-        *_curr_pixel = color_border;
+        *_curr_pixel = _border_color;
         _curr_pixel++;
         c--;
         _curr_x++;
@@ -506,8 +470,7 @@ void vic_step(bool *refresh)
         uint16_t char_offset = (char_code * (8)) + char_line;
         uint8_t  char_pixels = g_access(char_offset);
         uint8_t  color_index = _curr_color_line[char_index] & 0x7f;
-        uint32_t color_fg    = _colors[color_index];
-        uint32_t color_bg    = _colors[_background_color0];
+        uint32_t color_fg    = palette[color_index];
 
         while (c &&
                _curr_x <= _x_drawable_end) {
@@ -515,7 +478,7 @@ void vic_step(bool *refresh)
                 *_curr_pixel = color_fg;
             }
             else {
-                *_curr_pixel = color_bg;
+                *_curr_pixel = _background_color0;
             }
             _curr_pixel++;
             char_pixels = char_pixels << 1;
@@ -527,7 +490,7 @@ void vic_step(bool *refresh)
     /* Right border */
     if (c && _curr_x > _x_drawable_end) {
         while (c) {
-            *_curr_pixel = color_border;
+            *_curr_pixel = _border_color;
             _curr_pixel++;
             c--;
             _curr_x++;

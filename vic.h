@@ -23,17 +23,14 @@ enum vic_bank {
 };
 
 uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
-                     uint8_t *ram);
+                    uint8_t *ram);
 
 void vic_reg_set(uint8_t val, uint16_t absolute,
-                  uint8_t relative, uint8_t *ram);
+                 uint8_t relative, uint8_t *ram);
 
 void vic_set_bank(enum vic_bank bank);
 enum vic_bank vic_get_bank();
 
 void vic_step(bool *refresh);
 
-//void vic_trace_register_set(int fd);
-//void vic_trace_register_get(int fd);
-//
 void vic_stat();

@@ -13,6 +13,7 @@ src = [
     'pla.c',
     'sid.c',
     'vic.c',
+    'vic_palette.c',
 
     'main.c',
     'commandline.c',
