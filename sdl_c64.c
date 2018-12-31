@@ -195,7 +195,7 @@ void sdl_c64_loop(struct cpu_state *state)
     window = SDL_CreateWindow("Commodore C64",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              420, 400,
+                              520, 520,
                               0 /*SDL_WINDOW_FULLSCREEN*/);
 
     SDL_Surface *surface = SDL_GetWindowSurface(window);
@@ -212,6 +212,8 @@ void sdl_c64_loop(struct cpu_state *state)
 
     bool refresh = false;
     uint16_t key;
+    int num_calls = 0;
+    int vic_skips = 0;
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     while (!end) {
@@ -246,13 +248,21 @@ void sdl_c64_loop(struct cpu_state *state)
 
         cia1_cycle();
         cpu_step(state);
-        vic_step(&refresh);
+        if (vic_skips) {
+            vic_skips--;
+        }
+        else {
+            vic_step(&refresh, &vic_skips);
+            num_calls++;
+        }
 
         if (refresh) {
             clock_gettime(CLOCK_MONOTONIC, &stop);
             SDL_UpdateWindowSurface(window);
-            printf("Num ms %ld\n", (stop.tv_nsec - start.tv_nsec)/1000000);
+            //printf("Num ms %ld, n:%d\n", (stop.tv_nsec - start.tv_nsec)/1000000, num_calls);
             clock_gettime(CLOCK_MONOTONIC, &start);
+            refresh = false;
+            num_calls = 0;
         }
     }
 

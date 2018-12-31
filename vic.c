@@ -9,8 +9,16 @@
  * PAL version (6569).
  */
 
+struct cycle {
+    uint8_t  i; /* Char index */
+    uint16_t x;
+    bool     v; /* Visible */
+};
+
 /* Defined in vic_palette.c */
 uint32_t palette[16];
+
+#define X_DRAW_START 46
 
 static struct trace_point *_trace_set_reg = NULL;
 static struct trace_point *_trace_get_reg = NULL;
@@ -59,35 +67,100 @@ uint16_t _video_matrix_addr = 0x0000;
 static uint32_t *_screen;
 static uint32_t _pitch;
 
-/* First/last line of visible area */
-const uint16_t _y_visible_start = 0;
-const uint16_t _y_visible_end   = 312;
-/* First/last column of visible area */
-const uint16_t _x_visible_start = 0;
-const uint16_t _x_visible_end   = 400;
-/* Number of blanking before restart */
-const uint16_t _y_blanking      = 2;
-const uint16_t _x_blanking      = 2;
 /* First/last line of drawable area.
  * Changed when toggling between 24/25 rows. */
-uint16_t _y_drawable_start;
-uint16_t _y_drawable_end;
+uint16_t _top;
+uint16_t _bottom;
 /* First/last column of drawable area.
  * Changed when toggling between 38/40 columns. */
-uint16_t _x_drawable_start;
-uint16_t _x_drawable_end;
+uint16_t _left;
+uint16_t _right;
 
-uint16_t _curr_y        = 312;
+uint16_t _curr_y        = 0;
 uint16_t _curr_x        = 401;
-uint16_t _curr_blanking = 0;
+//uint16_t _curr_blanking = 0;
 uint16_t _curr_fetching = 0;
 uint32_t *_curr_pixel;
 
-/* Offset corresponds to _x_visible_start of 24 pixels */
-#define LINE_OFFSET 3
 /* Filled during bad line */
-uint8_t _curr_video_line[40+LINE_OFFSET];
-uint8_t _curr_color_line[40+LINE_OFFSET];
+uint8_t _curr_video_line[40];
+uint8_t _curr_color_line[40];
+
+static bool _main_flip_flop;
+static bool _vert_flip_flop;
+
+int _curr_cycle = 0;
+
+uint8_t _pixels;
+uint32_t _color_fg;
+
+struct cycle _line_cycles[63] = {
+    /* 0 - 9 */
+    { .i = -1, .x = 0x194, }, { .i = -1, .x = 0x19c, },
+    { .i = -1, .x = 0x1a4, }, { .i = -1, .x = 0x1ac, },
+    { .i = -1, .x = 0x1b4, }, { .i = -1, .x = 0x1bc, },
+    { .i = -1, .x = 0x1c4, }, { .i = -1, .x = 0x1cc, },
+    { .i = -1, .x = 0x1d4, }, { .i = -1, .x = 0x1dc, },
+    /* 10 - 19 */
+    { .i = -1, .x = 0x1e4, .v = true, },
+    { .i = -1, .x = 0x1ec, .v = true, },
+    { .i = -1, .x = 0x1f4, .v = true, },
+    { .i = -1, .x = 0x1fc, .v = true, },
+    { .i = -1, .x = 0x004, .v = true, },
+    { .i = -1, .x = 0x00c, .v = true, },
+    { .i =  0, .x = 0x014, .v = true, },
+    { .i =  1, .x = 0x01c, .v = true, },
+    { .i =  2, .x = 0x024, .v = true, },
+    { .i =  3, .x = 0x02c, .v = true, },
+    /* 20 - 29 */
+    { .i =  4, .x = 0x034, .v = true, },
+    { .i =  5, .x = 0x03c, .v = true, },
+    { .i =  6, .x = 0x044, .v = true, },
+    { .i =  7, .x = 0x04c, .v = true, },
+    { .i =  8, .x = 0x054, .v = true, },
+    { .i =  9, .x = 0x05c, .v = true, },
+    { .i = 10, .x = 0x064, .v = true, },
+    { .i = 11, .x = 0x06c, .v = true, },
+    { .i = 12, .x = 0x074, .v = true, },
+    { .i = 13, .x = 0x07c, .v = true, },
+    /* 30 - 39 */
+    { .i = 14, .x = 0x084, .v = true, },
+    { .i = 15, .x = 0x08c, .v = true, },
+    { .i = 16, .x = 0x094, .v = true, },
+    { .i = 17, .x = 0x09c, .v = true, },
+    { .i = 18, .x = 0x0a4, .v = true, },
+    { .i = 19, .x = 0x0ac, .v = true, },
+    { .i = 20, .x = 0x0b4, .v = true, },
+    { .i = 21, .x = 0x0bc, .v = true, },
+    { .i = 22, .x = 0x0c4, .v = true, },
+    { .i = 23, .x = 0x0cc, .v = true, },
+    /* 40 - 49 */
+    { .i = 24, .x = 0x0d4, .v = true, },
+    { .i = 25, .x = 0x0dc, .v = true, },
+    { .i = 26, .x = 0x0e4, .v = true, },
+    { .i = 27, .x = 0x0ec, .v = true, },
+    { .i = 28, .x = 0x0f4, .v = true, },
+    { .i = 29, .x = 0x0fc, .v = true, },
+    { .i = 30, .x = 0x104, .v = true, },
+    { .i = 31, .x = 0x10c, .v = true, },
+    { .i = 32, .x = 0x114, .v = true, },
+    { .i = 33, .x = 0x11c, .v = true, },
+    /* 50 - 59 */
+    { .i = 34, .x = 0x124, .v = true, },
+    { .i = 35, .x = 0x12c, .v = true, },
+    { .i = 36, .x = 0x134, .v = true, },
+    { .i = 37, .x = 0x13c, .v = true, },
+    { .i = 38, .x = 0x144, .v = true, },
+    { .i = 39, .x = 0x14c, .v = true, },
+    { .i = -1, .x = 0x154, .v = true, },
+    { .i = -1, .x = 0x15c, .v = true, },
+    { .i = -1, .x = 0x164, .v = true, },
+    { .i = -1, .x = 0x16c, .v = true, },
+    /* 60 - 63 */
+    { .i = -1, .x = 0x174, },
+    { .i = -1, .x = 0x17c, },
+    { .i = -1, .x = 0x184, },
+};
 
 void vic_stat()
 {
@@ -110,18 +183,18 @@ void vic_stat()
 
 static void _setup_drawable_area()
 {
-    _x_drawable_start = 24;
-    _x_drawable_end   = 343;
+    _left = 24;
+    _right   = 344;
     if (!_40_columns) {
-        _x_drawable_start += 8;
-        _x_drawable_end   -= 8;
+        _left = 31;
+        _right   = 335;
     }
 
-    _y_drawable_start = 51;
-    _y_drawable_end   = 251;
+    _top = 51;
+    _bottom   = 251;
     if (!_25_rows) {
-        _y_drawable_start += 8 - _scroll_y;
-        _y_drawable_end -= 8 -_scroll_y;
+        _top += 8 - _scroll_y;
+        _bottom -= 8 -_scroll_y;
     }
 }
 
@@ -159,6 +232,7 @@ void vic_screen(uint32_t *screen, uint32_t pitch)
 {
     _screen = screen;
     _pitch  = pitch;
+    _curr_pixel = _screen;
 }
 
 uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
@@ -315,68 +389,6 @@ enum vic_bank vic_get_bank()
     return _bank;
 }
 
-/*
-+------------------------------------------------+  <- Line 0 (6569)
-|       .                                .       |
-|       .   Vertical blanking interval   .       |
-|       .                                .       |
-+---+---+--------------------------------+---+---+  \
-|   |   |                                |   |   |  |
-| H |   |            Top border          |   | H |  |
-| o |   |                                |   | o |  |
-| r |   +--------------------------------+   | r |  |
-| i |   |                                |   | i |  |
-| z |   |                                |   | z |  |
-| o |   |                                |   | o |  |
-| n |   |                                |   | n |  |
-| t |   |                                |   | t |  |
-| a |   |                                | r | a |  |
-| l | l |                                | i | l |  |
-|   | e |                                | g |   |  |
-| b | f |                                | h | b |  |
-| l | t |                                | t | l |  |
-| a |   |         Display window         |   | a |  |- Visible lines
-| n | b |                                | b | n |  |
-| k | o |                                | o | k |  |
-| i | r |                                | r | i |  |
-| n | d |                                | d | n |  |
-| g | e |                                | e | g |  |
-|   | r |                                | r |   |  |
-| i |   |                                |   | i |  |
-| n |   |                                |   | n |  |
-| t |   |                                |   | t |  |
-| e |   |                                |   | e |  |
-| r |   |                                |   | r |  |
-| v |   +--------------------------------+   | v |  |
-| a |   |                                |   | a |  |
-| l |   |          Lower border          |   | l |  |
-|   |   |                                |   |   |  |
-+---+---+--------------------------------+---+---+  /
-|       .                                .       |
-|       .   Vertical blanking interval   .       |
-|       .                                .       |
-+------------------------------------------------+
-
-# of lines:          312
-Visible lines:       284
-Cycles/line:          63
-Visible pixels/line: 403
-First vblank line:   300
-Last vblank line:     15
-First 
-*/
-
-#define X_PER_CYCLE 8
-
-
-static bool is_bad_line()
-{
-    return _curr_x == _x_visible_start &&
-           _curr_y >= _y_drawable_start &&
-           _curr_y < _y_drawable_end &&
-           ((_curr_y & 0b111) == _scroll_y);
-}
-
 /* Fills internal 40*12 bits video matrix/color line buffer. */
 static void c_access()
 {
@@ -384,13 +396,13 @@ static void c_access()
     uint16_t offset;
 
     /* Video matrix / chars */
-    offset = ((_curr_y - _y_drawable_start) >> 3) * 40;
+    offset = ((_curr_y - 0x30) >> 3) * 40;
     from = _ram + _bank_offset + _video_matrix_addr + offset;
-    memcpy(_curr_video_line+LINE_OFFSET, from, 40);
+    memcpy(_curr_video_line, from, 40);
 
     /* Color data */
     from = _color_ram + offset;
-    memcpy(_curr_color_line+LINE_OFFSET, from, 40);
+    memcpy(_curr_color_line, from, 40);
 }
 
 /* Reads pixel data, char rom or bitmap */
@@ -406,94 +418,118 @@ static inline uint8_t g_access(uint16_t offset)
     return _ram[offset];
 }
 
-void vic_step(bool *refresh)
+static inline void check_y()
 {
-    int c = X_PER_CYCLE;
-    *refresh = false;
+    if (_curr_y == _bottom) {
+        _vert_flip_flop = true;
+    }
+    else if (_curr_y == _top &&
+             _display_enable) {
+        _vert_flip_flop = false;
+    }
+}
 
-    if (_curr_blanking) {
-        _curr_blanking--;
-        return;
+static inline void check_x()
+{
+    if (_curr_x == _right) {
+        _main_flip_flop = true;
+    }
+    else if (_curr_x == _left &&
+             _curr_y == _bottom) {
+        _vert_flip_flop = true;
+    }
+    else if (_display_enable &&
+             _curr_x == _left &&
+             _curr_y == _top) {
+        _vert_flip_flop = false;
     }
 
-    /* New raster line? */
-    if (_curr_x > _x_visible_end) {
-        _curr_y++;
-        _curr_x = _x_visible_start;
-        _curr_blanking = _x_blanking - 1;
-        _curr_pixel = (uint32_t*)(((uint8_t*)_screen) + _pitch * _curr_y);
-        return;
+    if (_curr_x == _left && !_vert_flip_flop) {
+        _main_flip_flop = false;
+    }
+}
+
+static inline void draw_pixel()
+{
+    check_x();
+    if (_main_flip_flop || _vert_flip_flop) {
+        *_curr_pixel = _border_color;
+    }
+    else {
+        if (_pixels & 0b10000000) {
+            *_curr_pixel = _color_fg;
+        }
+        else {
+            *_curr_pixel = _background_color0;
+        }
+    }
+    _pixels = _pixels << 1;
+    _curr_pixel++;
+    _curr_x++;
+}
+
+static void inline read_pixels(struct cycle *cycle)
+{
+    uint8_t char_code    = _curr_video_line[cycle->i];
+    int      char_line   = (_curr_y - _scroll_y) % 8;
+    uint16_t char_offset = (char_code * (8)) + char_line;
+    uint8_t  curr_pixels = g_access(char_offset);
+    uint8_t  color_index = _curr_color_line[cycle->i] & 0x7f;
+    uint32_t color_fg    = palette[color_index];
+
+    _pixels = curr_pixels;
+    _color_fg = color_fg;
+}
+
+void vic_step(bool *refresh, int* skip)
+{
+    struct cycle *cycle;
+
+    /* Fast forward */
+    if (_curr_y < 8 || _curr_y > 7+292) {
+        *skip = 62;
+        _curr_cycle = 62;
     }
 
-    /* Last raster line? */
-    if (_curr_y > _y_visible_end) {
-        _curr_y = _y_visible_start;
-        _curr_blanking = _y_blanking - 1;
-        *refresh  = true;
-        return;
-    }
-
-    /* CPU is stalled while fetching */
-    if (_curr_fetching) {
-        _curr_fetching--;
-    }
-    /* Check if another 40 chars + colors needs to be fetched */
-    else if (is_bad_line()) {
+    if (_curr_cycle == 5 &&
+        _curr_y >= 0x30 && _curr_y <= 0xf7 &&
+        ((_curr_y & 0b111) == _scroll_y)) {
         _curr_fetching = 40;
         c_access();
     }
 
-    /* Top/bottom border */
-    if (_curr_y < _y_drawable_start ||
-        _curr_y >= _y_drawable_end) {
-        while (c--) {
-            *_curr_pixel = _border_color;
-            _curr_pixel++;
-        }
-        _curr_x += X_PER_CYCLE;
-        return;
+    cycle = &_line_cycles[_curr_cycle];
+    _curr_x = cycle->x;
+
+    if (cycle->v) {
+        /* Draw last 4 pixels from last cycle */
+        draw_pixel();
+        draw_pixel();
+        draw_pixel();
+        draw_pixel();
+
+        read_pixels(cycle);
+        draw_pixel();
+        draw_pixel();
+        draw_pixel();
+        draw_pixel();
+    }
+    else {
+        _curr_x += 8;
     }
 
-    /* Left border */
-    while (_curr_x < _x_drawable_start && c) {
-        *_curr_pixel = _border_color;
-        _curr_pixel++;
-        c--;
-        _curr_x++;
-    }
-
-    if (c && _curr_x >= _x_drawable_start) {
-        /* Inside window */
-        int      char_index  = _curr_x / 8;
-        uint8_t  char_code   = _curr_video_line[char_index];
-        int      char_line   = (_curr_y - _scroll_y) % 8;
-        uint16_t char_offset = (char_code * (8)) + char_line;
-        uint8_t  char_pixels = g_access(char_offset);
-        uint8_t  color_index = _curr_color_line[char_index] & 0x7f;
-        uint32_t color_fg    = palette[color_index];
-
-        while (c &&
-               _curr_x <= _x_drawable_end) {
-            if (char_pixels & 0b10000000) {
-                *_curr_pixel = color_fg;
-            }
-            else {
-                *_curr_pixel = _background_color0;
-            }
-            _curr_pixel++;
-            char_pixels = char_pixels << 1;
-            _curr_x++;
-            c--;
+    _curr_cycle++;
+    if (_curr_cycle == 63) {
+        _curr_y++;
+        _curr_pixel = (uint32_t*)(((uint8_t*)_screen) + _pitch * _curr_y);
+        if (_curr_y == 313) {
+            _curr_y = 0;
+            *refresh = true;
         }
-    }
-
-    /* Right border */
-    if (c && _curr_x > _x_drawable_end) {
-        while (c) {
-            *_curr_pixel = _border_color;
-            _curr_pixel++;
-            c--;
-            _curr_x++;
+        else {
+            *skip = 5;
+            _curr_cycle = 5;
         }
+        check_y();
     }
 }

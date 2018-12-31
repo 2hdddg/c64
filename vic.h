@@ -31,6 +31,6 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
 void vic_set_bank(enum vic_bank bank);
 enum vic_bank vic_get_bank();
 
-void vic_step(bool *refresh);
+void vic_step(bool *refresh, int *skip);
 
 void vic_stat();
