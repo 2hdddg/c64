@@ -109,6 +109,64 @@ static void on_ram()
     }
 }
 
+static void set_vic_reg(uint16_t reg, uint8_t val)
+{
+    vic_reg_set(val, 0xd000 + reg, 0, NULL);
+}
+
+static uint8_t get_vic_reg(uint16_t reg)
+{
+    return vic_reg_get(0xd000 + reg, 0, NULL);
+}
+
+static void on_vic()
+{
+    char *token = strtok(NULL, " ");
+
+    if (!token || strcmp(token, "stat") == 0) {
+        vic_stat(STDOUT_FILENO);
+    }
+    if (strcmp(token, "cols") == 0) {
+        token = strtok(NULL, " ");
+        if (!token || strcmp(token, "40") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLX);
+            val |= VIC_SCROLX_COL_40;
+            set_vic_reg(VIC_REG_SCROLX, val);
+        }
+        else if (strcmp(token, "38") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLX);
+            val &= ~VIC_SCROLX_COL_40;
+            set_vic_reg(VIC_REG_SCROLX, val);
+        }
+    }
+    if (strcmp(token, "rows") == 0) {
+        token = strtok(NULL, " ");
+        if (strcmp(token, "25") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLY);
+            val |= VIC_SCROLY_ROW_25;
+            set_vic_reg(VIC_REG_SCROLY, val);
+        }
+        else if (strcmp(token, "24") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLY);
+            val &= ~VIC_SCROLY_ROW_25;
+            set_vic_reg(VIC_REG_SCROLY, val);
+        }
+    }
+    if (strcmp(token, "display") == 0) {
+        token = strtok(NULL, " ");
+        if (!token || strcmp(token, "on") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLY);
+            val |= VIC_SCROLY_DISPLAY_EN;
+            set_vic_reg(VIC_REG_SCROLY, val);
+        }
+        else if (strcmp(token, "off") == 0) {
+            uint8_t val = get_vic_reg(VIC_REG_SCROLY);
+            val &= ~VIC_SCROLY_DISPLAY_EN;
+            set_vic_reg(VIC_REG_SCROLY, val);
+        }
+    }
+}
+
 static void on_dis()
 {
     int  num    = 10;
@@ -141,11 +199,6 @@ static void xon_exit()
 static void on_basic()
 {
     basic_stat(STDOUT_FILENO);
-}
-
-static void on_vic()
-{
-    vic_stat(STDOUT_FILENO);
 }
 
 /*

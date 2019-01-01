@@ -184,9 +184,20 @@ static uint16_t map_key(SDL_Keycode sym)
     return 0;
 }
 
+static bool refresh = false;
+static struct timespec start, stop;
+
+static void do_refresh(SDL_Window *window)
+{
+    clock_gettime(CLOCK_MONOTONIC, &stop);
+    SDL_UpdateWindowSurface(window);
+    //printf("Num ms %ld\n", (stop.tv_nsec - start.tv_nsec)/1000000);
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    refresh = false;
+}
+
 void sdl_c64_loop(struct cpu_state *state)
 {
-    struct timespec start, stop;
     SDL_Window *window = NULL;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -204,16 +215,15 @@ void sdl_c64_loop(struct cpu_state *state)
     SDL_Event event;
 
     if (surface->format->format != SDL_PIXELFORMAT_RGB888) {
-        printf("%s\n", SDL_GetPixelFormatName(surface->format->format));
+        //printf("%s\n", SDL_GetPixelFormatName(surface->format->format));
         return;
     }
 
     vic_screen(surface->pixels, surface->pitch);
 
-    bool refresh = false;
     uint16_t key;
-    int num_calls = 0;
     int vic_skips = 0;
+    bool stall_cpu = false;
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     while (!end) {
@@ -247,23 +257,28 @@ void sdl_c64_loop(struct cpu_state *state)
         }
 
         cia1_cycle();
-        cpu_step(state);
         if (vic_skips) {
             vic_skips--;
         }
         else {
-            vic_step(&refresh, &vic_skips);
-            num_calls++;
+            vic_step(&refresh, &vic_skips, &stall_cpu);
+        }
+        if (vic_skips) {
+            vic_skips--;
+        }
+        else {
+            vic_step(&refresh, &vic_skips, &stall_cpu);
+        }
+        if (refresh) {
+            do_refresh(window);
+        }
+        if (!stall_cpu) {
+            cpu_step(state);
+        }
+        else {
+            stall_cpu = false;
         }
 
-        if (refresh) {
-            clock_gettime(CLOCK_MONOTONIC, &stop);
-            SDL_UpdateWindowSurface(window);
-            //printf("Num ms %ld, n:%d\n", (stop.tv_nsec - start.tv_nsec)/1000000, num_calls);
-            clock_gettime(CLOCK_MONOTONIC, &start);
-            refresh = false;
-            num_calls = 0;
-        }
     }
 
     SDL_DestroyWindow(window);

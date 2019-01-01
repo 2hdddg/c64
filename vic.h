@@ -4,6 +4,16 @@
 
 #include "mem.h"
 
+#define VIC_REG_SCROLX 0x16
+#define VIC_SCROLX_COL_40       0b00001000
+#define VIC_SCROLX_MULTICOLOR   0b00010000
+#define VIC_SCROLX_SCROLL       0b00000111
+#define VIC_SCROLX_RESET        0b00100000
+
+#define VIC_REG_SCROLY 0x11
+#define VIC_SCROLY_DISPLAY_EN   0b00010000
+#define VIC_SCROLY_ROW_25       0b00001000
+
 void vic_init(uint8_t *char_rom,
               uint8_t *ram,
               uint8_t *color_ram);
@@ -31,6 +41,6 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
 void vic_set_bank(enum vic_bank bank);
 enum vic_bank vic_get_bank();
 
-void vic_step(bool *refresh, int *skip);
+void vic_step(bool *refresh, int *skip, bool *stall_cpu);
 
 void vic_stat();

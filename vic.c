@@ -252,7 +252,7 @@ uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
 void vic_reg_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
-    uint16_t offset = (absolute - 0xd00) % 0x40;
+    uint16_t offset = (absolute - 0xd000) % 0x40;
 
     /* Save for fallback impl of get */
     _raw_regs[offset] = val;
@@ -296,11 +296,11 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         TRACE_NOT_IMPL(_trace_error, "sprites");
         break;
 
-    /* SCROLY, vertical fine scrolling and control */
-    case 0x11:
+    /* Vertical fine scrolling and control */
+    case VIC_REG_SCROLY:
         _scroll_y            = (val & 0b00000111);
-        _25_rows             = (val & 0b00001000) > 0;
-        _display_enable      = (val & 0b00010000) > 0;
+        _25_rows             = (val & VIC_SCROLY_ROW_25) > 0;
+        _display_enable      = (val & VIC_SCROLY_DISPLAY_EN) > 0;
         _bitmap_graphics     = (val & 0b00100000) > 0;
         _extended_color_text = (val & 0b01000000) > 0;
         if (val & 0b10000000) {
@@ -316,12 +316,12 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     /* RASTER */
         _raster_compare = (_raster_compare & 0xff00) | val;
         break;
-    /* SCROLX, horizontal fine scrolling and control */
-    case 0x16:
-        _40_columns = (val & 0b00001000) > 0;
-        _multicolor = (val & 0b00010000) > 0;
-        _scroll_x   = (val & 0b00000111);
-        _reset      = (val & 0b00100000) > 0;
+    /* Horizontal fine scrolling and control */
+    case VIC_REG_SCROLX:
+        _40_columns = (val & VIC_SCROLX_COL_40) > 0;
+        _multicolor = (val & VIC_SCROLX_MULTICOLOR) > 0;
+        _scroll_x   = (val & VIC_SCROLX_SCROLL);
+        _reset      = (val & VIC_SCROLX_RESET) > 0;
         _setup_drawable_area();
         break;
     /* VMCSB */
@@ -481,7 +481,7 @@ static void inline read_pixels(struct cycle *cycle)
     _color_fg = color_fg;
 }
 
-void vic_step(bool *refresh, int* skip)
+void vic_step(bool *refresh, int* skip, bool *stall_cpu)
 {
     struct cycle *cycle;
 
@@ -491,7 +491,11 @@ void vic_step(bool *refresh, int* skip)
         _curr_cycle = 62;
     }
 
-    if (_curr_cycle == 5 &&
+    if (_curr_fetching) {
+        _curr_fetching--;
+        *stall_cpu = true;
+    }
+    else if (_curr_cycle == 5 &&
         _curr_y >= 0x30 && _curr_y <= 0xf7 &&
         ((_curr_y & 0b111) == _scroll_y)) {
         _curr_fetching = 40;
