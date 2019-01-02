@@ -10,7 +10,6 @@
  */
 
 struct cycle {
-    uint8_t  i; /* Char index */
     uint16_t x;
     bool     v; /* Visible */
 };
@@ -83,8 +82,9 @@ uint16_t _curr_fetching = 0;
 uint32_t *_curr_pixel;
 
 /* Filled during bad line */
-uint8_t _curr_video_line[40];
-uint8_t _curr_color_line[40];
+#define LINE_OFFSET 3
+uint8_t _curr_video_line[40+LINE_OFFSET];
+uint8_t _curr_color_line[40+LINE_OFFSET];
 
 static bool _main_flip_flop;
 static bool _vert_flip_flop;
@@ -96,70 +96,70 @@ uint32_t _color_fg;
 
 struct cycle _line_cycles[63] = {
     /* 0 - 9 */
-    { .i = -1, .x = 0x194, }, { .i = -1, .x = 0x19c, },
-    { .i = -1, .x = 0x1a4, }, { .i = -1, .x = 0x1ac, },
-    { .i = -1, .x = 0x1b4, }, { .i = -1, .x = 0x1bc, },
-    { .i = -1, .x = 0x1c4, }, { .i = -1, .x = 0x1cc, },
-    { .i = -1, .x = 0x1d4, }, { .i = -1, .x = 0x1dc, },
+    { .x = 0x194, }, { .x = 0x19c, },
+    { .x = 0x1a4, }, { .x = 0x1ac, },
+    { .x = 0x1b4, }, { .x = 0x1bc, },
+    { .x = 0x1c4, }, { .x = 0x1cc, },
+    { .x = 0x1d4, }, { .x = 0x1dc, },
     /* 10 - 19 */
-    { .i = -1, .x = 0x1e4, .v = true, },
-    { .i = -1, .x = 0x1ec, .v = true, },
-    { .i = -1, .x = 0x1f4, .v = true, },
-    { .i = -1, .x = 0x1fc, .v = true, },
-    { .i = -1, .x = 0x004, .v = true, },
-    { .i = -1, .x = 0x00c, .v = true, },
-    { .i =  0, .x = 0x014, .v = true, },
-    { .i =  1, .x = 0x01c, .v = true, },
-    { .i =  2, .x = 0x024, .v = true, },
-    { .i =  3, .x = 0x02c, .v = true, },
+    { .x = 0x1e4, .v = true, },
+    { .x = 0x1ec, .v = true, },
+    { .x = 0x1f4, .v = true, },
+    { .x = 0x1fc, .v = true, },
+    { .x = 0x004, .v = true, },
+    { .x = 0x00c, .v = true, },
+    { .x = 0x014, .v = true, },
+    { .x = 0x01c, .v = true, },
+    { .x = 0x024, .v = true, },
+    { .x = 0x02c, .v = true, },
     /* 20 - 29 */
-    { .i =  4, .x = 0x034, .v = true, },
-    { .i =  5, .x = 0x03c, .v = true, },
-    { .i =  6, .x = 0x044, .v = true, },
-    { .i =  7, .x = 0x04c, .v = true, },
-    { .i =  8, .x = 0x054, .v = true, },
-    { .i =  9, .x = 0x05c, .v = true, },
-    { .i = 10, .x = 0x064, .v = true, },
-    { .i = 11, .x = 0x06c, .v = true, },
-    { .i = 12, .x = 0x074, .v = true, },
-    { .i = 13, .x = 0x07c, .v = true, },
+    { .x = 0x034, .v = true, },
+    { .x = 0x03c, .v = true, },
+    { .x = 0x044, .v = true, },
+    { .x = 0x04c, .v = true, },
+    { .x = 0x054, .v = true, },
+    { .x = 0x05c, .v = true, },
+    { .x = 0x064, .v = true, },
+    { .x = 0x06c, .v = true, },
+    { .x = 0x074, .v = true, },
+    { .x = 0x07c, .v = true, },
     /* 30 - 39 */
-    { .i = 14, .x = 0x084, .v = true, },
-    { .i = 15, .x = 0x08c, .v = true, },
-    { .i = 16, .x = 0x094, .v = true, },
-    { .i = 17, .x = 0x09c, .v = true, },
-    { .i = 18, .x = 0x0a4, .v = true, },
-    { .i = 19, .x = 0x0ac, .v = true, },
-    { .i = 20, .x = 0x0b4, .v = true, },
-    { .i = 21, .x = 0x0bc, .v = true, },
-    { .i = 22, .x = 0x0c4, .v = true, },
-    { .i = 23, .x = 0x0cc, .v = true, },
+    { .x = 0x084, .v = true, },
+    { .x = 0x08c, .v = true, },
+    { .x = 0x094, .v = true, },
+    { .x = 0x09c, .v = true, },
+    { .x = 0x0a4, .v = true, },
+    { .x = 0x0ac, .v = true, },
+    { .x = 0x0b4, .v = true, },
+    { .x = 0x0bc, .v = true, },
+    { .x = 0x0c4, .v = true, },
+    { .x = 0x0cc, .v = true, },
     /* 40 - 49 */
-    { .i = 24, .x = 0x0d4, .v = true, },
-    { .i = 25, .x = 0x0dc, .v = true, },
-    { .i = 26, .x = 0x0e4, .v = true, },
-    { .i = 27, .x = 0x0ec, .v = true, },
-    { .i = 28, .x = 0x0f4, .v = true, },
-    { .i = 29, .x = 0x0fc, .v = true, },
-    { .i = 30, .x = 0x104, .v = true, },
-    { .i = 31, .x = 0x10c, .v = true, },
-    { .i = 32, .x = 0x114, .v = true, },
-    { .i = 33, .x = 0x11c, .v = true, },
+    { .x = 0x0d4, .v = true, },
+    { .x = 0x0dc, .v = true, },
+    { .x = 0x0e4, .v = true, },
+    { .x = 0x0ec, .v = true, },
+    { .x = 0x0f4, .v = true, },
+    { .x = 0x0fc, .v = true, },
+    { .x = 0x104, .v = true, },
+    { .x = 0x10c, .v = true, },
+    { .x = 0x114, .v = true, },
+    { .x = 0x11c, .v = true, },
     /* 50 - 59 */
-    { .i = 34, .x = 0x124, .v = true, },
-    { .i = 35, .x = 0x12c, .v = true, },
-    { .i = 36, .x = 0x134, .v = true, },
-    { .i = 37, .x = 0x13c, .v = true, },
-    { .i = 38, .x = 0x144, .v = true, },
-    { .i = 39, .x = 0x14c, .v = true, },
-    { .i = -1, .x = 0x154, .v = true, },
-    { .i = -1, .x = 0x15c, .v = true, },
-    { .i = -1, .x = 0x164, .v = true, },
-    { .i = -1, .x = 0x16c, .v = true, },
+    { .x = 0x124, .v = true, },
+    { .x = 0x12c, .v = true, },
+    { .x = 0x134, .v = true, },
+    { .x = 0x13c, .v = true, },
+    { .x = 0x144, .v = true, },
+    { .x = 0x14c, .v = true, },
+    { .x = 0x154, .v = true, },
+    { .x = 0x15c, .v = true, },
+    { .x = 0x164, .v = true, },
+    { .x = 0x16c, .v = true, },
     /* 60 - 63 */
-    { .i = -1, .x = 0x174, },
-    { .i = -1, .x = 0x17c, },
-    { .i = -1, .x = 0x184, },
+    { .x = 0x174, },
+    { .x = 0x17c, },
+    { .x = 0x184, },
 };
 
 void vic_stat()
@@ -398,24 +398,11 @@ static void c_access()
     /* Video matrix / chars */
     offset = ((_curr_y - 0x30) >> 3) * 40;
     from = _ram + _bank_offset + _video_matrix_addr + offset;
-    memcpy(_curr_video_line, from, 40);
+    memcpy(_curr_video_line+LINE_OFFSET, from, 40);
 
     /* Color data */
     from = _color_ram + offset;
-    memcpy(_curr_color_line, from, 40);
-}
-
-/* Reads pixel data, char rom or bitmap */
-static inline uint8_t g_access(uint16_t offset)
-{
-    uint16_t addr = _char_pixels_addr + offset;
-
-    if (_char_rom_offset > 0 &&
-        addr >= _char_rom_offset &&
-        addr < _char_rom_offset + 0x1000) {
-        return _char_rom[offset];
-    }
-    return _ram[offset];
+    memcpy(_curr_color_line+LINE_OFFSET, from, 40);
 }
 
 static inline void check_y()
@@ -468,17 +455,24 @@ static inline void draw_pixel()
     _curr_x++;
 }
 
-static void inline read_pixels(struct cycle *cycle)
+static void inline g_access()
 {
-    uint8_t char_code    = _curr_video_line[cycle->i];
-    int      char_line   = (_curr_y - _scroll_y) % 8;
-    uint16_t char_offset = (char_code * (8)) + char_line;
-    uint8_t  curr_pixels = g_access(char_offset);
-    uint8_t  color_index = _curr_color_line[cycle->i] & 0x7f;
-    uint32_t color_fg    = palette[color_index];
+    int      index  = _curr_x / 8;
+    uint8_t  char_code   = _curr_video_line[index];
+    int      line   = (_curr_y - _scroll_y) % 8;
+    uint16_t char_offset = (char_code * (8)) + line;
+    uint8_t  color = _curr_color_line[index] & 0x7f;
+    uint16_t addr        = _char_pixels_addr + char_offset;
 
-    _pixels = curr_pixels;
-    _color_fg = color_fg;
+    if (_char_rom_offset > 0 &&
+        addr >= _char_rom_offset &&
+        addr < _char_rom_offset + 0x1000) {
+        _pixels = _char_rom[char_offset];
+    }
+    else {
+        _pixels = _ram[char_offset];
+    }
+    _color_fg = palette[color];
 }
 
 void vic_step(bool *refresh, int* skip, bool *stall_cpu)
@@ -506,17 +500,14 @@ void vic_step(bool *refresh, int* skip, bool *stall_cpu)
     _curr_x = cycle->x;
 
     if (cycle->v) {
-        /* Draw last 4 pixels from last cycle */
-        draw_pixel();
-        draw_pixel();
-        draw_pixel();
-        draw_pixel();
+        int num = 8;
 
-        read_pixels(cycle);
-        draw_pixel();
-        draw_pixel();
-        draw_pixel();
-        draw_pixel();
+        while (num--) {
+            draw_pixel();
+            if ((_curr_x & 0b111) == _scroll_x) {
+                g_access();
+            }
+        }
     }
     else {
         _curr_x += 8;

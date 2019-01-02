@@ -126,7 +126,7 @@ static void on_vic()
     if (!token || strcmp(token, "stat") == 0) {
         vic_stat(STDOUT_FILENO);
     }
-    if (strcmp(token, "cols") == 0) {
+    else if (strcmp(token, "cols") == 0) {
         token = strtok(NULL, " ");
         if (!token || strcmp(token, "40") == 0) {
             uint8_t val = get_vic_reg(VIC_REG_SCROLX);
@@ -139,7 +139,7 @@ static void on_vic()
             set_vic_reg(VIC_REG_SCROLX, val);
         }
     }
-    if (strcmp(token, "rows") == 0) {
+    else if (strcmp(token, "rows") == 0) {
         token = strtok(NULL, " ");
         if (strcmp(token, "25") == 0) {
             uint8_t val = get_vic_reg(VIC_REG_SCROLY);
@@ -152,7 +152,7 @@ static void on_vic()
             set_vic_reg(VIC_REG_SCROLY, val);
         }
     }
-    if (strcmp(token, "display") == 0) {
+    else if (strcmp(token, "display") == 0) {
         token = strtok(NULL, " ");
         if (!token || strcmp(token, "on") == 0) {
             uint8_t val = get_vic_reg(VIC_REG_SCROLY);
@@ -164,6 +164,28 @@ static void on_vic()
             val &= ~VIC_SCROLY_DISPLAY_EN;
             set_vic_reg(VIC_REG_SCROLY, val);
         }
+    }
+    else if (strcmp(token, "scry") == 0) {
+        token = strtok(NULL, " ");
+        uint8_t val = get_vic_reg(VIC_REG_SCROLY) & ~VIC_SCROLY_SCROLL;
+        int num = strtol(token, NULL, 16);
+        if (num > 7 || num < 0) {
+            printf("Illegal scroll\n");
+            return;
+        }
+        val |= num;
+        set_vic_reg(VIC_REG_SCROLY, val);
+    }
+    else if (strcmp(token, "scrx") == 0) {
+        token = strtok(NULL, " ");
+        uint8_t val = get_vic_reg(VIC_REG_SCROLX) & ~VIC_SCROLX_SCROLL;
+        int num = strtol(token, NULL, 16);
+        if (num > 7 || num < 0) {
+            printf("Illegal scroll\n");
+            return;
+        }
+        val |= num;
+        set_vic_reg(VIC_REG_SCROLX, val);
     }
 }
 

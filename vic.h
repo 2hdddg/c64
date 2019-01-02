@@ -13,6 +13,7 @@
 #define VIC_REG_SCROLY 0x11
 #define VIC_SCROLY_DISPLAY_EN   0b00010000
 #define VIC_SCROLY_ROW_25       0b00001000
+#define VIC_SCROLY_SCROLL       0b00000111
 
 void vic_init(uint8_t *char_rom,
               uint8_t *ram,
