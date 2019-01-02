@@ -15,11 +15,15 @@
 #define VIC_SCROLY_ROW_25       0b00001000
 #define VIC_SCROLY_SCROLL       0b00000111
 
+#define VIC_REG_EXTCOL 0x20
+#define VIC_REG_BGCOL0 0x21
+
 void vic_init(uint8_t *char_rom,
               uint8_t *ram,
               uint8_t *color_ram);
 
 void vic_screen(uint32_t *screen, uint32_t pitch);
+void vic_reset();
 
 /* Values match CIA2 port A */
 enum vic_bank {

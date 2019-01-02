@@ -17,8 +17,6 @@ struct cycle {
 /* Defined in vic_palette.c */
 uint32_t palette[16];
 
-#define X_DRAW_START 46
-
 static struct trace_point *_trace_set_reg = NULL;
 static struct trace_point *_trace_get_reg = NULL;
 static struct trace_point *_trace_error   = NULL;
@@ -77,7 +75,6 @@ uint16_t _right;
 
 uint16_t _curr_y        = 0;
 uint16_t _curr_x        = 401;
-//uint16_t _curr_blanking = 0;
 uint16_t _curr_fetching = 0;
 uint32_t *_curr_pixel;
 
@@ -198,7 +195,7 @@ static void _setup_drawable_area()
     }
 }
 
-static void vic_reset()
+void vic_reset()
 {
     _bitmap_graphics     = false;
     _extended_color_text = false;
@@ -207,6 +204,33 @@ static void vic_reset()
     _40_columns          = false;
     _25_rows             = false;
     _reset               = false;
+    _char_pixels_addr    = 0x0000;
+    _video_matrix_addr   = 0x0000;
+    _bank                = 0x00;
+    _bank_offset         = 0x0000;
+    _char_rom_offset     = 0x0000;
+    _scroll_y            = 0;
+    _scroll_x            = 0;
+    _raster_compare      = 0;
+    _interrupt_mask      = 0;
+    _interrupt_flag      = 0;
+    _border_color        = 0;
+    _background_color0   = 0;
+    _background_color1   = 0;
+    _background_color2   = 0;
+    _curr_y              = 0;
+    _curr_x              = 0;
+    _curr_fetching       = 0;
+    _curr_pixel          = _screen;
+    _main_flip_flop      = true;
+    _vert_flip_flop      = true;
+    _curr_cycle          = 0;
+    _pixels              = 0;
+    _color_fg            = 0;
+
+    memset(_curr_video_line, 0, 40+LINE_OFFSET);
+    memset(_curr_color_line, 0, 40+LINE_OFFSET);
+    memset(_raw_regs, 0, 0x40);
 
     _setup_drawable_area();
 }
@@ -219,7 +243,6 @@ void vic_init(uint8_t *char_rom,
     _ram       = ram;
     _color_ram = color_ram;
 
-    memset(_raw_regs, 0, 0x40);
     vic_reset();
 
     _trace_set_reg = trace_add_point("VIC", "set reg");
@@ -227,6 +250,7 @@ void vic_init(uint8_t *char_rom,
     _trace_error   = trace_add_point("VIC", "ERROR");
     _trace_bank    = trace_add_point("VIC", "bank");
 }
+
 
 void vic_screen(uint32_t *screen, uint32_t pitch)
 {
@@ -337,7 +361,7 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     case 0x1a:
         _interrupt_mask = val;
         break;
-    case 0x20:
+    case VIC_REG_EXTCOL:
         _border_color = palette[val & 0x0f];
         break;
     case 0x21:
@@ -486,10 +510,12 @@ void vic_step(bool *refresh, int* skip, bool *stall_cpu)
     }
 
     if (_curr_fetching) {
+        /* Filling lines */
         _curr_fetching--;
         *stall_cpu = true;
     }
     else if (_curr_cycle == 5 &&
+        /* Need to start filling lines */
         _curr_y >= 0x30 && _curr_y <= 0xf7 &&
         ((_curr_y & 0b111) == _scroll_y)) {
         _curr_fetching = 40;
