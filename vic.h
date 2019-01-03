@@ -4,19 +4,28 @@
 
 #include "mem.h"
 
+/* Registers */
+#define VIC_REG_SCROLY 0x11
 #define VIC_REG_SCROLX 0x16
+#define VIC_REG_VMCSB  0x18
+#define VIC_REG_EXTCOL 0x20
+#define VIC_REG_BGCOL0 0x21
+
+/* SCROLX flags and masks */
 #define VIC_SCROLX_COL_40       0b00001000
 #define VIC_SCROLX_MULTICOLOR   0b00010000
 #define VIC_SCROLX_SCROLL       0b00000111
 #define VIC_SCROLX_RESET        0b00100000
 
-#define VIC_REG_SCROLY 0x11
+/* SCROLY flags and masks */
 #define VIC_SCROLY_DISPLAY_EN   0b00010000
 #define VIC_SCROLY_ROW_25       0b00001000
 #define VIC_SCROLY_SCROLL       0b00000111
 
-#define VIC_REG_EXTCOL 0x20
-#define VIC_REG_BGCOL0 0x21
+/* VMCSB masks */
+#define VIC_VMCSB_CHAR_PIX_ADDR 0b00001110
+#define VIC_VMCSB_VID_MATR_ADDR 0b11110000
+
 
 void vic_init(uint8_t *char_rom,
               uint8_t *ram,

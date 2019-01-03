@@ -16,15 +16,28 @@ uint32_t palette[16];
 /* Where screen pixels start */
 #define SCREEN_START_TOP      9
 #define SCREEN_START_LEFT     0
-/* Size of borders, 25 cols/40 rows */
+/* Size of borders, 40 cols/25 lines */
 #define BORDER_WIDTH_LEFT    46
 #define BORDER_WIDTH_RIGHT   36
 #define BORDER_HEIGHT_TOP    43
 #define BORDER_HEIGHT_BOTTOM 49
 
+/* -2 might not be right... */
 #define NUM_LINES (43 + 200 + 49 - 2)
 #define NUM_COLS  (46 + 320 + 36 - 2)
 
+/* Coordinates of first drawable pixels, 40 cols/25 lines */
+#define START_X 52
+#define START_Y 42
+
+#define CHAR1_INDEX 7
+#define CHAR2_INDEX 38
+uint8_t _char1[] = {
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+};
+uint8_t _char2[] = {
+    0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+};
 
 static void set_reg(uint16_t reg, uint8_t val)
 {
@@ -56,10 +69,16 @@ int once_before()
 
 int each_before()
 {
-    memset(_ram, 0, 0xffff);
-    memset(_color_ram, 0, 1000);
-    memset(_screen, 0, 500*500);
+    memset(_ram, 0, sizeof(_ram));
+    memset(_color_ram, 0, sizeof(_color_ram));
+    memset(_screen, 0, sizeof(_screen));
+    memset(_char_rom, 0, sizeof(_char_rom));
+    /* Copy example char pixels to char rom */
+    memcpy(_char_rom+(CHAR1_INDEX*8), _char1, sizeof(_char1));
+    memcpy(_char_rom+(CHAR2_INDEX*8), _char2, sizeof(_char2));
+
     vic_reset();
+    vic_set_bank(vic_bank_0);
 
     /* Setup defaults after boot */
     set_reg(VIC_REG_SCROLY,
@@ -68,6 +87,7 @@ int each_before()
             VIC_SCROLX_COL_40);
     set_reg(VIC_REG_EXTCOL, 14);
     set_reg(VIC_REG_BGCOL0, 6);
+    set_reg(VIC_REG_VMCSB, 4 | (1 << 4));
 
     return 0;
 }
@@ -79,8 +99,6 @@ int test_all_borders_when_display_disabled()
 
     set_reg(VIC_REG_SCROLY,
             get_reg(VIC_REG_SCROLY) & ~VIC_SCROLY_DISPLAY_EN);
-
-    vic_stat();
     render_frame();
 
     for (int y = 0; y < NUM_LINES; y++) {
@@ -101,6 +119,8 @@ int test_all_borders_when_display_disabled()
     return 1;
 }
 
+/* Counts number of background pixels on the complete screen to
+ * verify height. */
 int test_height()
 {
     uint32_t color;
@@ -141,7 +161,8 @@ int test_height()
     return 1;
 }
 
-
+/* Counts number of background pixels on the complete screen to
+ * verify width. */
 int test_width()
 {
     uint32_t color;
@@ -182,7 +203,6 @@ int test_width()
     return 1;
 }
 
-//52, 42
 /* Verifies that borders are on the correct places */
 int test_borders()
 {
@@ -199,8 +219,8 @@ int test_borders()
             color = line[x];
 
             /* All border */
-            if (y < 42 || y >= 42+200 ||
-                x < 52 || x >= 52+320) {
+            if (y < START_Y || y >= START_Y+200 ||
+                x < START_X || x >= START_X+320) {
                 if (color != palette[14]) {
                     printf("Expected border: %08x at %d,%d "
                            "but was %08x\n", palette[14], x, y, color);
@@ -220,6 +240,82 @@ int test_borders()
 
     if (num_bg != 320*200) {
         return 0;
+    }
+
+    return 1;
+}
+
+static uint32_t get_drawable_pixel(int x, int y)
+{
+    uint32_t *line = _screen;
+
+    line += (SCREEN_START_TOP + y + START_Y) * _pitch;
+    return line[SCREEN_START_LEFT + START_X + x];
+}
+
+/* Reads 8x8 pixels */
+static void read_char_pixels(int xstart, int ystart, uint32_t *pixels)
+{
+    for (int y = ystart; y < 8; y++) {
+        for (int x = xstart; x < 8; x++) {
+            *pixels = get_drawable_pixel(x, y);
+            pixels++;
+        }
+    }
+}
+
+static uint8_t pixels_to_char_line(uint32_t *pixels, uint32_t color)
+{
+    uint8_t line = 0;
+
+    for (int i = 0; i < 8; i++) {
+        line = line << 1;
+        if (*pixels == color) {
+            line |= 1;
+        }
+        pixels++;
+    }
+    return line;
+}
+
+int test_render_chars()
+{
+    uint8_t *video_matrix = _ram + 0x400;
+    uint8_t *color_ram = _color_ram;
+    uint32_t char_pixels[8*8];
+    uint8_t  line;
+
+    /* Fill ram with lines of char1 and char2 */
+    for (int i = 0; i < 25; i++) {
+        memset(video_matrix,
+               i & 0x01 ? CHAR2_INDEX : CHAR1_INDEX, 40);
+        /* Fill color ram with red or yellow */
+        memset(_color_ram, i & 0x01 ? 2 : 7, 40);
+
+        video_matrix += 40;
+        color_ram += 40;
+    }
+
+    render_frame();
+
+    for (int row = 0; row < 1/*25*/; row++) {
+        uint8_t *the_char = row & 0x01 ? _char2 : _char1;
+        uint32_t the_color = row & 0x01 ? palette[2] : palette[7];
+        for (int col = 0; col < 40; col++) {
+            read_char_pixels(col * 8, row * 8, char_pixels);
+            /* Check line by line in char */
+            for (int i = 0; i < 8; i++) {
+                line = pixels_to_char_line(char_pixels + (i * 8),
+                                           the_color);
+                if (line != the_char[i]) {
+                    vic_stat();
+                    printf("Char line %d on row %d col %d should be "
+                           "%02x but was %02x\n",
+                           i, row, col, the_char[i], line);
+                    return 0;
+                }
+            }
+        }
     }
 
     return 1;

@@ -233,6 +233,7 @@ void vic_reset()
     memset(_raw_regs, 0, 0x40);
 
     _setup_drawable_area();
+    vic_set_bank(vic_bank_0);
 }
 
 void vic_init(uint8_t *char_rom,
@@ -348,10 +349,10 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         _reset      = (val & VIC_SCROLX_RESET) > 0;
         _setup_drawable_area();
         break;
-    /* VMCSB */
-    case 0x18:
-        _char_pixels_addr  = (val & 0b00001110) * 1024;
-        _video_matrix_addr = ((val & 0b11110000) >> 4) * 1024;
+    /* Memory control register */
+    case VIC_REG_VMCSB:
+        _char_pixels_addr  = (val & VIC_VMCSB_CHAR_PIX_ADDR) * 1024;
+        _video_matrix_addr = ((val & VIC_VMCSB_VID_MATR_ADDR) >> 4) * 1024;
         break;
     /* VICIRQ */
     case 0x19:
@@ -482,19 +483,19 @@ static inline void draw_pixel()
 static void inline g_access()
 {
     int      index  = _curr_x / 8;
-    uint8_t  char_code   = _curr_video_line[index];
+    uint8_t  code   = _curr_video_line[index];
     int      line   = (_curr_y - _scroll_y) % 8;
-    uint16_t char_offset = (char_code * (8)) + line;
-    uint8_t  color = _curr_color_line[index] & 0x7f;
-    uint16_t addr        = _char_pixels_addr + char_offset;
+    uint16_t offset = (code * (8)) + line;
+    uint8_t  color  = _curr_color_line[index] & 0x7f;
+    uint16_t addr   = _char_pixels_addr + offset;
 
     if (_char_rom_offset > 0 &&
         addr >= _char_rom_offset &&
         addr < _char_rom_offset + 0x1000) {
-        _pixels = _char_rom[char_offset];
+        _pixels = _char_rom[offset];
     }
     else {
-        _pixels = _ram[char_offset];
+        _pixels = _ram[offset];
     }
     _color_fg = palette[color];
 }
