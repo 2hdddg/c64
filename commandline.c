@@ -17,8 +17,9 @@ static int  _log_fd;
 static bool _exit_loop;
 static bool *_exit_app;
 
-static uint16_t _ram_address = 0;
-static uint16_t _dis_address = 0;
+static uint16_t _ram_address       = 0;
+static uint16_t _dis_address       = 0;
+static uint16_t _color_ram_address = 0;
 
 typedef void (*command_handler)();
 
@@ -73,6 +74,68 @@ static void on_trace()
     }
 }
 
+static bool parse_address(char *token, uint16_t *address)
+{
+    char *out;
+
+    if (!token) {
+        return false;
+    }
+    int user_address = strtol(token, &out, 16);
+    if (user_address == 0 && out == token) {
+        printf("Illegal address: %s\n", token);
+        return false;
+    }
+    if (user_address < 0 || user_address > 0xffff) {
+        printf("Adress too large: %d\n", user_address);
+        return false;
+    }
+
+    *address = (uint16_t)user_address;
+    return true;
+}
+
+static bool parse_num(char *token, uint16_t *num)
+{
+    return parse_address(token, num);
+}
+
+static bool parse_val(char *token, uint8_t *val)
+{
+    char *out;
+    int user_val = strtol(token, &out, 16);
+
+    if (!token) {
+        return false;
+    }
+    if (user_val == 0 && out == token) {
+        printf("Illegal val: %s\n", token);
+        return false;
+    }
+    if (user_val < 0 || user_val > 0xff) {
+        printf("Val too large: %d\n", user_val);
+        return false;
+    }
+
+    *val = (uint8_t)user_val;
+    return true;
+}
+
+static uint16_t dump(uint8_t *addr, uint16_t vaddr, int lines, int width)
+{
+    while (lines--) {
+        printf("%04x ", vaddr);
+        for (int i = 0; i < width; i++) {
+            printf("%02x ", *addr);
+            addr++;
+        }
+
+        vaddr += width;
+        printf("\n");
+    }
+    return vaddr;
+}
+
 static void on_ram()
 {
     const uint16_t width = 16;
@@ -82,13 +145,10 @@ static void on_ram()
     int           lines  = 0;
 
     if (token) {
-        char *out;
-        int  user_address = strtol(token, &out, 16);
-        if (user_address == 0 && out == token) {
-            printf("Illegal address: %s\n", token);
+        if (!parse_address(token, &_ram_address)) {
             return;
         }
-        _ram_address = user_address & 0xfff0;
+        _ram_address = _ram_address & 0xfff0;
     }
 
     if (_ram_address + num > 0xffff) {
@@ -97,16 +157,59 @@ static void on_ram()
 
     lines = (num + (width - 1)) / width;
     ram =  mem_get_ram(_ram_address);
-    while (lines--) {
-        printf("%04x ", _ram_address);
-        for (int i = 0; i < width; i++) {
-            printf("%02x ", *ram);
-            ram++;
-        }
+    _ram_address = dump(ram, _ram_address, lines, width);
+}
 
-        _ram_address += width;
-        printf("\n");
+static void on_color_ram()
+{
+    const uint16_t width = 16;
+    uint8_t        *ram  = mem_get_color_ram_for_vic();
+    int            num   = width * 10;
+    char          *token = strtok(NULL, " ");
+    int           lines  = 0;
+
+    if (token) {
+        if (strcmp(token, "set") == 0) {
+            uint8_t  val;
+            uint16_t num = 1;
+            uint16_t addr;
+
+            token = strtok(NULL, " ");
+            if (!parse_address(token, &addr)) {
+                return;
+            }
+            token = strtok(NULL, " ");
+            if (!parse_val(token, &val)) {
+                return;
+            }
+            token = strtok(NULL, " ");
+            if (token) {
+                parse_num(token, &num);
+            }
+            ram += addr;
+            printf("Setting %04x num %02x to %02x\n",
+                    addr, num, val);
+            for (int i = 0; i < num; i++) {
+                ram[i] = val;
+            }
+            return;
+        }
+        else {
+            if (!parse_address(token, &_color_ram_address)) {
+                return;
+            }
+            _color_ram_address = _color_ram_address & 0xfff0;
+            /* Fall through to dump */
+        }
     }
+
+    if (_color_ram_address + num > 0xffff) {
+        num = 0xffff - _color_ram_address;
+    }
+
+    lines = (num + (width - 1)) / width;
+    ram +=  _color_ram_address;
+    _color_ram_address = dump(ram, _color_ram_address, lines, width);
 }
 
 static void set_vic_reg(uint16_t reg, uint8_t val)
@@ -249,6 +352,10 @@ struct command _commands[] = {
     {
         .name    = "ram",
         .handler = on_ram,
+    },
+    {
+        .name    = "colorram",
+        .handler = on_color_ram,
     },
     {
         .name    = "dis",

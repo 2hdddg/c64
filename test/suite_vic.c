@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "vic_palette.h"
 #include "vic.h"
 
 uint8_t _ram[0xffff];
@@ -32,6 +33,8 @@ uint32_t palette[16];
 
 #define CHAR1_INDEX 7
 #define CHAR2_INDEX 38
+
+/* Dummy characters used in tests */
 uint8_t _char1[] = {
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 };
@@ -60,6 +63,44 @@ static void render_frame()
     }
 }
 
+/* Returns drawn pixel, coordinates relative drawable area */
+static uint32_t get_drawable_pixel(int x, int y)
+{
+    uint32_t *line = _screen;
+
+    line += (SCREEN_START_TOP + y + START_Y) * _pitch;
+    line += SCREEN_START_LEFT + START_X + x;
+
+    return *line;
+}
+
+/* Reads 8x8 pixels */
+static void read_char_pixels(int xstart, int ystart, uint32_t *pixels)
+{
+    for (int y = ystart; y < 8; y++) {
+        for (int x = xstart; x < 8; x++) {
+            *pixels = get_drawable_pixel(x, y);
+            pixels++;
+        }
+    }
+}
+
+/* Converts eight uint32_t pixels to bitmap uint8_t. Ones where color
+ * matches. */
+static uint8_t pixels_to_char_line(uint32_t *pixels, uint32_t color)
+{
+    uint8_t line = 0;
+
+    for (int i = 0; i < 8; i++) {
+        line = line << 1;
+        if (*pixels == color) {
+            line |= 1;
+        }
+        pixels++;
+    }
+    return line;
+}
+
 int once_before()
 {
     vic_init(_char_rom, _ram, _color_ram);
@@ -85,8 +126,8 @@ int each_before()
             3 | VIC_SCROLY_ROW_25 | VIC_SCROLY_DISPLAY_EN);
     set_reg(VIC_REG_SCROLX,
             VIC_SCROLX_COL_40);
-    set_reg(VIC_REG_EXTCOL, 14);
-    set_reg(VIC_REG_BGCOL0, 6);
+    set_reg(VIC_REG_EXTCOL, VIC_LIGHT_BLUE);
+    set_reg(VIC_REG_BGCOL0, VIC_BLUE);
     set_reg(VIC_REG_VMCSB, 4 | (1 << 4));
 
     return 0;
@@ -107,10 +148,11 @@ int test_all_borders_when_display_disabled()
         for (int x = 0; x < NUM_COLS; x++) {
             color = line[x];
 
-            if (color != palette[14]) {
+            if (color != palette[VIC_LIGHT_BLUE]) {
                 vic_stat();
                 printf("Expected border: %08x at %d,%d "
-                       "but was %08x\n", palette[14], x, y, color);
+                       "but was %08x\n",
+                       palette[VIC_LIGHT_BLUE], x, y, color);
                 return 0;
             }
         }
@@ -135,7 +177,7 @@ int test_height()
         line = _screen + ((SCREEN_START_TOP + y) * _pitch) +
                SCREEN_START_LEFT;
         color = line[x];
-        if (color == palette[6]) {
+        if (color == palette[VIC_BLUE]) {
             if (!found) {
                 num_lines = 1;
                 found = true;
@@ -177,7 +219,7 @@ int test_width()
            SCREEN_START_LEFT;
     for (int x = 0; x < NUM_COLS; x++) {
         color = line[x];
-        if (color == palette[6]) {
+        if (color == palette[VIC_BLUE]) {
             if (!found) {
                 num_cols = 1;
                 found = true;
@@ -221,16 +263,18 @@ int test_borders()
             /* All border */
             if (y < START_Y || y >= START_Y+200 ||
                 x < START_X || x >= START_X+320) {
-                if (color != palette[14]) {
+                if (color != palette[VIC_LIGHT_BLUE]) {
                     printf("Expected border: %08x at %d,%d "
-                           "but was %08x\n", palette[14], x, y, color);
+                           "but was %08x\n",
+                           palette[VIC_LIGHT_BLUE], x, y, color);
                     return 0;
                 }
             }
             else {
-                if (color != palette[6]) {
+                if (color != palette[VIC_BLUE]) {
                     printf("Expected bg: %08x at %d,%d "
-                           "but was %08x\n", palette[6], x, y, color);
+                           "but was %08x\n",
+                           palette[VIC_BLUE], x, y, color);
                     return 0;
                 }
                 num_bg++;
@@ -245,39 +289,6 @@ int test_borders()
     return 1;
 }
 
-static uint32_t get_drawable_pixel(int x, int y)
-{
-    uint32_t *line = _screen;
-
-    line += (SCREEN_START_TOP + y + START_Y) * _pitch;
-    return line[SCREEN_START_LEFT + START_X + x];
-}
-
-/* Reads 8x8 pixels */
-static void read_char_pixels(int xstart, int ystart, uint32_t *pixels)
-{
-    for (int y = ystart; y < 8; y++) {
-        for (int x = xstart; x < 8; x++) {
-            *pixels = get_drawable_pixel(x, y);
-            pixels++;
-        }
-    }
-}
-
-static uint8_t pixels_to_char_line(uint32_t *pixels, uint32_t color)
-{
-    uint8_t line = 0;
-
-    for (int i = 0; i < 8; i++) {
-        line = line << 1;
-        if (*pixels == color) {
-            line |= 1;
-        }
-        pixels++;
-    }
-    return line;
-}
-
 int test_render_chars()
 {
     uint8_t *video_matrix = _ram + 0x400;
@@ -285,12 +296,14 @@ int test_render_chars()
     uint32_t char_pixels[8*8];
     uint8_t  line;
 
-    /* Fill ram with lines of char1 and char2 */
+    /* Fill ram with odd lines of red char2 and even lines with yellow
+     * char1.  */
     for (int i = 0; i < 25; i++) {
-        memset(video_matrix,
-               i & 0x01 ? CHAR2_INDEX : CHAR1_INDEX, 40);
-        /* Fill color ram with red or yellow */
-        memset(_color_ram, i & 0x01 ? 2 : 7, 40);
+        uint8_t char_index  = i & 0x01 ? CHAR2_INDEX : CHAR1_INDEX;
+        uint8_t color_index = i & 0x01 ? VIC_RED : VIC_YELLOW;
+
+        memset(video_matrix, char_index, 40);
+        memset(_color_ram, color_index, 40);
 
         video_matrix += 40;
         color_ram += 40;
@@ -298,9 +311,11 @@ int test_render_chars()
 
     render_frame();
 
-    for (int row = 0; row < 1/*25*/; row++) {
+    for (int row = 0; row < 25; row++) {
         uint8_t *the_char = row & 0x01 ? _char2 : _char1;
-        uint32_t the_color = row & 0x01 ? palette[2] : palette[7];
+        uint32_t the_color = row & 0x01 ?
+            palette[VIC_RED] : palette[VIC_YELLOW];
+
         for (int col = 0; col < 40; col++) {
             read_char_pixels(col * 8, row * 8, char_pixels);
             /* Check line by line in char */
