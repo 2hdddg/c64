@@ -352,8 +352,10 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
         break;
     /* Memory control register */
     case VIC_REG_VMCSB:
-        _char_pixels_addr  = (val & VIC_VMCSB_CHAR_PIX_ADDR) * 1024;
-        _video_matrix_addr = ((val & VIC_VMCSB_VID_MATR_ADDR) >> 4) * 1024;
+        _char_pixels_addr  = (val & VIC_VMCSB_CHAR_PIX_ADDR) *
+                             1024;
+        _video_matrix_addr = ((val & VIC_VMCSB_VID_MATR_ADDR) >> 4) *
+                             1024;
         break;
     /* VICIRQ */
     case 0x19:

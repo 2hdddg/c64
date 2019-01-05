@@ -292,6 +292,41 @@ static void on_vic()
     }
 }
 
+static void on_load()
+{
+    char     *token = strtok(NULL, " ");
+    FILE     *f;
+    size_t   size;
+    uint8_t  buf[0xffff];
+    uint16_t start;
+    uint8_t  *ram;
+
+    if (!token) {
+        printf("Missing filepath to PRG\n");
+        return;
+    }
+
+    f = fopen(token, "rb");
+    if (!f) {
+        printf("Failed to open %s\n", token);
+        return;
+    }
+    printf("Loading %s...\n", token);
+    size = fread(buf, 1, 0xffff, f);
+    if (size <= 1) {
+        printf("Failed to read\n");
+        return;
+    }
+    start = (buf[1] << 8) | buf[0];
+    printf("Loaded %04x bytes program starts "
+           "at %04x\n", (uint16_t)size, start);
+    ram = mem_get_ram(start);
+    if (!ram) {
+        return;
+    }
+    memcpy(ram, buf + 2, size - 2);
+}
+
 static void on_dis()
 {
     int  num    = 10;
@@ -368,6 +403,10 @@ struct command _commands[] = {
     {
         .name    = "vic",
         .handler = on_vic,
+    },
+    {
+        .name    = "load",
+        .handler = on_load,
     },
 };
 int _num_commands = sizeof(_commands) / sizeof(_commands[0]);
