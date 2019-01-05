@@ -58,3 +58,4 @@ enum vic_bank vic_get_bank();
 void vic_step(bool *refresh, int *skip, bool *stall_cpu);
 
 void vic_stat();
+void vic_snapshot(const char *name);

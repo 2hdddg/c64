@@ -4,6 +4,7 @@
 
 #include "trace.h"
 #include "vic.h"
+#include "snapshot.h"
 
 /* Emulates Video Interface Controller II (VIC-II).
  * PAL version (6569).
@@ -554,4 +555,9 @@ void vic_step(bool *refresh, int* skip, bool *stall_cpu)
         }
         check_y();
     }
+}
+
+void vic_snapshot(const char *name)
+{
+    snap_screen(_screen, _pitch, 400, 400, name);
 }

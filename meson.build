@@ -20,6 +20,7 @@ src = [
     'trace.c',
 
     'sdl_c64.c',
+    'snapshot.c',
 
     'ncurses_c64.c',
 ]
@@ -27,7 +28,7 @@ src = [
 sdl_dep = dependency('sdl2')
 
 executable('c64', src, dependencies: [sdl_dep], link_args: [
-    '-lmenu', '-lncurses'])
+    '-lmenu', '-lncurses', '-lpng'])
 
 # Test suites
 shared_library('suite_cpu', [
@@ -46,5 +47,6 @@ shared_library('suite_cia_timer', [
 shared_library('suite_keyboard', [
     'test/suite_keyboard.c', 'keyboard.c', 'trace.c'])
 shared_library('suite_vic', [
-    'test/suite_vic.c', 'vic.c', 'vic_palette.c', 'trace.c'])
+    'test/suite_vic.c', 'vic.c', 'vic_palette.c', 'trace.c', 'snapshot.c'],
+    link_args: ['-lpng'])
 

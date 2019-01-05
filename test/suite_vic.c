@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "snapshot.h"
 #include "vic_palette.h"
 #include "vic.h"
 
@@ -36,7 +37,7 @@ uint32_t palette[16];
 
 /* Dummy characters used in tests */
 uint8_t _char1[] = {
-    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    0xff, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xff,
 };
 uint8_t _char2[] = {
     0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
@@ -77,8 +78,8 @@ static uint32_t get_drawable_pixel(int x, int y)
 /* Reads 8x8 pixels */
 static void read_char_pixels(int xstart, int ystart, uint32_t *pixels)
 {
-    for (int y = ystart; y < 8; y++) {
-        for (int x = xstart; x < 8; x++) {
+    for (int y = ystart; y < ystart + 8; y++) {
+        for (int x = xstart; x < xstart + 8; x++) {
             *pixels = get_drawable_pixel(x, y);
             pixels++;
         }
@@ -303,7 +304,7 @@ int test_render_chars()
         uint8_t color_index = i & 0x01 ? VIC_RED : VIC_YELLOW;
 
         memset(video_matrix, char_index, 40);
-        memset(_color_ram, color_index, 40);
+        memset(color_ram, color_index, 40);
 
         video_matrix += 40;
         color_ram += 40;
@@ -312,7 +313,8 @@ int test_render_chars()
     render_frame();
 
     for (int row = 0; row < 25; row++) {
-        uint8_t *the_char = row & 0x01 ? _char2 : _char1;
+        uint8_t *the_char = row & 0x01 ?
+            _char2 : _char1;
         uint32_t the_color = row & 0x01 ?
             palette[VIC_RED] : palette[VIC_YELLOW];
 
@@ -327,6 +329,7 @@ int test_render_chars()
                     printf("Char line %d on row %d col %d should be "
                            "%02x but was %02x\n",
                            i, row, col, the_char[i], line);
+                    snap_screen(_screen, _pitch*4, 500, 500, "./fail.png");
                     return 0;
                 }
             }

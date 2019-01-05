@@ -280,6 +280,7 @@ void sdl_c64_loop(struct cpu_state *state)
         }
 
     }
+    vic_snapshot("./snap.png");
 
     SDL_DestroyWindow(window);
     SDL_Quit();
