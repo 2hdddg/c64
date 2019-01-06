@@ -510,14 +510,14 @@ static void draw_pixel_standard_text_mode()
 static void draw_pixel_standard_bitmap_mode()
 {
     if ((_curr_x & 0b111) == _scroll_x) {
-        int      index  = _curr_x / 8;
-        int      y      = ((_curr_y - 0x30) >> 3) * 40;
+        int      column = _curr_x / 8;
+        int      row    = ((_curr_y - 0x30) >> 3);
         int      line   = (_curr_y - _scroll_y) % 8;
-        uint16_t offset = y + (index * 8) + line;
+        uint16_t offset = (row * (40 * 8)) + (column * 8) + line;
         uint16_t addr   = _bitmap_data_addr + offset;
 
         _pixels = _ram[addr];
-        _color_fg = _curr_video_line[index];
+        _color_fg = _curr_video_line[column];
     }
     check_x();
     if (_main_flip_flop || _vert_flip_flop) {

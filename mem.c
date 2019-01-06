@@ -20,6 +20,7 @@ struct mem_hooks _cpu_hooks[256];
 
 void mem_init()
 {
+    memset(_cpu_hooks, 0, sizeof(_cpu_hooks));
     mem_reset();
 }
 
@@ -30,7 +31,6 @@ uint8_t* mem_get_color_ram_for_vic()
 
 void mem_reset()
 {
-    memset(_cpu_hooks, 0, sizeof(_cpu_hooks));
     memset(_ram, 0, sizeof(_ram));
     memset(_color_ram, 0, sizeof(_color_ram));
 }
