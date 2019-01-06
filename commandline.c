@@ -25,6 +25,8 @@ typedef void (*command_handler)();
 
 struct command {
     char            *name;
+    char            *alternative;
+    char            *description;
     command_handler handler;
 };
 
@@ -361,6 +363,7 @@ static void on_basic()
     basic_stat(STDOUT_FILENO);
 }
 
+static void on_help();
 /*
  * SYNTAX:
  *
@@ -373,51 +376,75 @@ static void on_basic()
  */
 struct command _commands[] = {
     {
-        .name    = "trace",
-        .handler = on_trace,
+        .name        = "trace",
+        .handler     = on_trace,
     },
     {
-        .name    = "exit",
-        .handler = xon_exit,
+        .name        = "exit",
+        .handler     = xon_exit,
     },
     {
-        .name    = "c64",
-        .handler = on_c64,
+        .name        = "c64",
+        .alternative = "run",
+        .handler     = on_c64,
     },
     {
-        .name    = "ram",
-        .handler = on_ram,
+        .name        = "ram",
+        .handler     = on_ram,
     },
     {
-        .name    = "colorram",
-        .handler = on_color_ram,
+        .name        = "colorram",
+        .handler     = on_color_ram,
     },
     {
-        .name    = "dis",
-        .handler = on_dis,
+        .name        = "dis",
+        .handler     = on_dis,
     },
     {
-        .name    = "basic",
-        .handler = on_basic,
+        .name        = "basic",
+        .handler     = on_basic,
     },
     {
-        .name    = "vic",
-        .handler = on_vic,
+        .name        = "vic",
+        .handler     = on_vic,
     },
     {
-        .name    = "load",
-        .handler = on_load,
+        .name        = "load",
+        .handler     = on_load,
+    },
+    {
+        .name        = "help",
+        .alternative = "?",
+        .handler     = on_help,
     },
 };
 int _num_commands = sizeof(_commands) / sizeof(_commands[0]);
+
+static void on_help()
+{
+    struct command *command;
+
+    printf("Commands:\n");
+    for (int i = 0; i < _num_commands; i++) {
+        command = &_commands[i];
+        if (command->alternative) {
+            printf("%s, %s\n", command->name, command->alternative);
+        }
+        else {
+            printf("%s\n", command->name);
+        }
+        if (command->description) {
+            printf("\t%s", command->description);
+        }
+    }
+}
 
 void commandline_loop()
 {
     char   *line = NULL;
     size_t size;
     size_t len;
-
-    /* TODO: Remove all leftovers from ncurses */
+    struct command *command;
 
     _exit_loop = false;
     while (!_exit_loop) {
@@ -431,8 +458,11 @@ void commandline_loop()
             char *name = token ? token : line;
             if (name) {
                 for (int i = 0; i < _num_commands; i++) {
-                    if (strcmp(_commands[i].name, name) == 0) {
-                        _commands[i].handler();
+                    command = &_commands[i];
+                    if (strcmp(command->name, name) == 0 ||
+                        (command->alternative &&
+                        strcmp(command->alternative, name) == 0)) {
+                        command->handler();
                         break;
                     }
                 }
