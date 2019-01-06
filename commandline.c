@@ -375,12 +375,24 @@ static void on_help()
     }
 }
 
+static struct command* find_command(const char *name)
+{
+    for (int i = 0; i < _num_commands; i++) {
+        struct command *command = &_commands[i];
+        if (strcmp(command->name, name) == 0 ||
+            (command->alternative &&
+            strcmp(command->alternative, name) == 0)) {
+            return command;
+        }
+    }
+    return NULL;
+}
+
 void commandline_loop()
 {
     char   *line = NULL;
     size_t size;
     size_t len;
-    struct command *command;
 
     _exit_loop = false;
     while (!_exit_loop) {
@@ -391,16 +403,14 @@ void commandline_loop()
         if (len > 0) {
             line[len - 1] = 0;
             char *token = strtok(line, " ");
-            char *name = token ? token : line;
+            char *name  = token ? token : line;
             if (name) {
-                for (int i = 0; i < _num_commands; i++) {
-                    command = &_commands[i];
-                    if (strcmp(command->name, name) == 0 ||
-                        (command->alternative &&
-                        strcmp(command->alternative, name) == 0)) {
-                        command->handler();
-                        break;
-                    }
+                struct command *command = find_command(name);
+                if (command) {
+                    command->handler();
+                }
+                else {
+                    printf("Unknown command, try 'help'\n");
                 }
             }
         }
