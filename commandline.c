@@ -15,6 +15,7 @@
 #include "commandline.h"
 #include "basic.h"
 #include "vic.h"
+#include "pla.h"
 #include "command.h"
 
 static int  _log_fd;
@@ -246,6 +247,11 @@ static void on_vic()
     }
 }
 
+static void on_pla()
+{
+    pla_stat();
+}
+
 static void on_load()
 {
     char     *token = strtok(NULL, " ");
@@ -346,6 +352,10 @@ struct command _commands[] = {
     {
         .name        = "vic",
         .handler     = on_vic,
+    },
+    {
+        .name        = "pla",
+        .handler     = on_pla,
     },
     {
         .name        = "load",
