@@ -29,7 +29,7 @@ src = [
 sdl_dep = dependency('sdl2')
 
 executable('c64', src, dependencies: [sdl_dep], link_args: [
-    '-lmenu', '-lncurses', '-lpng'])
+    '-lmenu', '-lncurses', '-lpng', '-lreadline'])
 
 # Test suites
 shared_library('suite_cpu', [

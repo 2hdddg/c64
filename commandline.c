@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -391,17 +394,11 @@ static struct command* find_command(const char *name)
 void commandline_loop()
 {
     char   *line = NULL;
-    size_t size;
-    size_t len;
 
     _exit_loop = false;
     while (!_exit_loop) {
-        printf(">>");
-        fflush(stdout);
-
-        len = getline(&line, &size, stdin);
-        if (len > 0) {
-            line[len - 1] = 0;
+        line = readline(">>");
+        if (line && strlen(line)) {
             char *token = strtok(line, " ");
             char *name  = token ? token : line;
             if (name) {
@@ -414,8 +411,8 @@ void commandline_loop()
                 }
             }
         }
+        free(line);
     }
-    free(line);
 }
 
 int commandline_init(bool *exit, struct cpu_state *state)
