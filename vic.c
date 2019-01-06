@@ -58,6 +58,7 @@ uint8_t _raw_regs[0x40];
 
 /* Address within VIC bank that contains char pixels */
 uint16_t _char_pixels_addr  = 0x0000;
+uint16_t _bitmap_data_addr  = 0x0000;
 /* Address within VIC bank that contains chars and sprite shapes */
 uint16_t _video_matrix_addr = 0x0000;
 
@@ -169,6 +170,7 @@ void vic_stat()
     printf("Multicolor     : %s\n", _multicolor ? "yes" : "no");
     printf("Video matrix   : %04x\n", _video_matrix_addr);
     printf("Char pixels    : %04x\n", _char_pixels_addr);
+    printf("Bitmap data    : %04x\n", _bitmap_data_addr);
     printf("Scroll y       : %02x\n", _scroll_y);
     printf("Scroll x       : %02x\n", _scroll_x);
     printf("Raster compare : %04x\n", _raster_compare);
@@ -206,6 +208,7 @@ void vic_reset()
     _25_rows             = false;
     _reset               = false;
     _char_pixels_addr    = 0x0000;
+    _bitmap_data_addr    = 0x0000;
     _video_matrix_addr   = 0x0000;
     _bank                = 0x00;
     _bank_offset         = 0x0000;
@@ -354,6 +357,8 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     case VIC_REG_VMCSB:
         _char_pixels_addr  = (val & VIC_VMCSB_CHAR_PIX_ADDR) *
                              1024;
+        _bitmap_data_addr  = ((val & VIC_VMCSB_CHAR_PIX_ADDR) >> 3) *
+                             8192;
         _video_matrix_addr = ((val & VIC_VMCSB_VID_MATR_ADDR) >> 4) *
                              1024;
         break;
@@ -464,8 +469,27 @@ static inline void check_x()
     }
 }
 
-static inline void draw_pixel()
+static void draw_pixel_standard_text_mode()
 {
+    if ((_curr_x & 0b111) == _scroll_x) {
+        /* G access */
+        int      index  = _curr_x / 8;
+        uint8_t  code   = _curr_video_line[index];
+        int      line   = (_curr_y - _scroll_y) % 8;
+        uint16_t offset = (code * (8)) + line;
+        uint8_t  color  = _curr_color_line[index] & 0x7f;
+        uint16_t addr   = _char_pixels_addr + offset;
+
+        if (_char_rom_offset > 0 &&
+            addr >= _char_rom_offset &&
+            addr < _char_rom_offset + 0x1000) {
+            _pixels = _char_rom[offset];
+        }
+        else {
+            _pixels = _ram[offset];
+        }
+        _color_fg = palette[color];
+    }
     check_x();
     if (_main_flip_flop || _vert_flip_flop) {
         *_curr_pixel = _border_color;
@@ -483,24 +507,34 @@ static inline void draw_pixel()
     _curr_x++;
 }
 
-static void inline g_access()
+static void draw_pixel_standard_bitmap_mode()
 {
-    int      index  = _curr_x / 8;
-    uint8_t  code   = _curr_video_line[index];
-    int      line   = (_curr_y - _scroll_y) % 8;
-    uint16_t offset = (code * (8)) + line;
-    uint8_t  color  = _curr_color_line[index] & 0x7f;
-    uint16_t addr   = _char_pixels_addr + offset;
+    if ((_curr_x & 0b111) == _scroll_x) {
+        int      index  = _curr_x / 8;
+        int      y      = ((_curr_y - 0x30) >> 3) * 40;
+        int      line   = (_curr_y - _scroll_y) % 8;
+        uint16_t offset = y + (index * 8) + line;
+        uint16_t addr   = _bitmap_data_addr + offset;
 
-    if (_char_rom_offset > 0 &&
-        addr >= _char_rom_offset &&
-        addr < _char_rom_offset + 0x1000) {
-        _pixels = _char_rom[offset];
+        _pixels = _ram[addr];
+        _color_fg = _curr_video_line[index];
+    }
+    check_x();
+    if (_main_flip_flop || _vert_flip_flop) {
+        *_curr_pixel = _border_color;
     }
     else {
-        _pixels = _ram[offset];
+        if (_pixels & 0b10000000) {
+            *_curr_pixel = palette[_color_fg >> 4];
+        }
+        else {
+            *_curr_pixel = palette[_color_fg & 0x7f];
+        }
     }
-    _color_fg = palette[color];
+    _pixels = _pixels << 1;
+    _curr_pixel++;
+    _curr_x++;
+
 }
 
 void vic_step(bool *refresh, int* skip, bool *stall_cpu)
@@ -530,12 +564,14 @@ void vic_step(bool *refresh, int* skip, bool *stall_cpu)
     _curr_x = cycle->x;
 
     if (cycle->v) {
-        int num = 8;
+        int num   = 8;
 
         while (num--) {
-            draw_pixel();
-            if ((_curr_x & 0b111) == _scroll_x) {
-                g_access();
+            if (!_bitmap_graphics) {
+                draw_pixel_standard_text_mode();
+            }
+            else {
+                draw_pixel_standard_bitmap_mode();
             }
         }
     }

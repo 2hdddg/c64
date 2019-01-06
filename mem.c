@@ -7,7 +7,7 @@
 #include "mem.h"
 
 uint8_t _ram[65536];
-uint8_t _color_ram[1000];
+uint8_t _color_ram[1024];
 
 
 struct mem_hooks {
@@ -20,9 +20,7 @@ struct mem_hooks _cpu_hooks[256];
 
 void mem_init()
 {
-    memset(_cpu_hooks, 0, sizeof(_cpu_hooks));
-    memset(_ram, 0, 0xffff);
-    memset(_color_ram, 0, 1000);
+    mem_reset();
 }
 
 uint8_t* mem_get_color_ram_for_vic()
@@ -32,7 +30,9 @@ uint8_t* mem_get_color_ram_for_vic()
 
 void mem_reset()
 {
-    memset(_ram, 0, 0xffff);
+    memset(_cpu_hooks, 0, sizeof(_cpu_hooks));
+    memset(_ram, 0, sizeof(_ram));
+    memset(_color_ram, 0, sizeof(_color_ram));
 }
 
 void mem_set_for_cpu(uint16_t addr, uint8_t val)
@@ -83,8 +83,8 @@ void mem_color_ram_set(uint8_t val, uint16_t absolute,
 {
     uint16_t offset = absolute - 0xd800;
 
-    if (offset >= 1000) {
-        printf("Color ofset!\n");
+    if (offset >= sizeof(_color_ram)) {
+        printf("Color offset, setting %04x to %02x!\n", absolute, val);
         return;
     }
     _color_ram[offset] = val;
@@ -95,8 +95,8 @@ uint8_t mem_color_ram_get(uint16_t absolute, uint8_t relative,
 {
     uint16_t offset = absolute - 0xd800;
 
-    if (offset >= 1000) {
-        printf("Color ofset get!\n");
+    if (offset >= sizeof(_color_ram)) {
+        printf("Color offset get!\n");
         return 0;
     }
     return _color_ram[offset];
