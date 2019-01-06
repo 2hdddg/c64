@@ -17,6 +17,7 @@ src = [
 
     'main.c',
     'commandline.c',
+    'command.c',
     'trace.c',
 
     'sdl_c64.c',

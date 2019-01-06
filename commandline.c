@@ -12,6 +12,7 @@
 #include "commandline.h"
 #include "basic.h"
 #include "vic.h"
+#include "command.h"
 
 static int  _log_fd;
 static bool _exit_loop;
@@ -30,13 +31,24 @@ struct command {
     command_handler handler;
 };
 
+static void set_vic_reg(uint16_t reg, uint8_t val)
+{
+    vic_reg_set(val, 0xd000 + reg, 0, NULL);
+}
+
+static uint8_t get_vic_reg(uint16_t reg)
+{
+    return vic_reg_get(0xd000 + reg, 0, NULL);
+}
+
 static void on_trace()
 {
     char   *token = strtok(NULL, " ");
     struct trace_point *p;
 
+    /* List all traces, enabled and then disabled ones.
+     * Default if no parameters specified. */
     if (!token || strcmp(token, "list") == 0) {
-        /* List all traces */
         printf("Enabled trace points:\n");
         p = trace_enum_points(NULL);
         while (p) {
@@ -53,9 +65,12 @@ static void on_trace()
             }
             p = trace_enum_points(p);
         }
+        return;
     }
-    else if (strcmp(token, "on") == 0 ||
-             strcmp(token, "off") == 0) {
+
+    /* Turn traces on or off. */
+    if (strcmp(token, "on") == 0 ||
+        strcmp(token, "off") == 0) {
         char *sys    = strtok(NULL, " ");
         char *name   = strtok(NULL, " ");
         bool turn_on = strcmp(token, "on") == 0;
@@ -63,91 +78,33 @@ static void on_trace()
 
         p = trace_enum_points(NULL);
         while (p) {
+            /* When sys is not specified all traces will be
+             * turned on/off. */
             if (sys == NULL || strcmp(p->sys, sys) == 0) {
+                /* When name not specified all traces that matches
+                 * sys will be turned on/off. */
                 if (name == NULL || strcmp(p->name, name) == 0) {
                     p->fd = fd;
                 }
             }
             p = trace_enum_points(p);
         }
-    }
-    else {
-        printf("Unknown trace parameter\n");
-    }
-}
-
-static bool parse_address(char *token, uint16_t *address)
-{
-    char *out;
-
-    if (!token) {
-        return false;
-    }
-    int user_address = strtol(token, &out, 16);
-    if (user_address == 0 && out == token) {
-        printf("Illegal address: %s\n", token);
-        return false;
-    }
-    if (user_address < 0 || user_address > 0xffff) {
-        printf("Adress too large: %d\n", user_address);
-        return false;
+        return;
     }
 
-    *address = (uint16_t)user_address;
-    return true;
-}
-
-static bool parse_num(char *token, uint16_t *num)
-{
-    return parse_address(token, num);
-}
-
-static bool parse_val(char *token, uint8_t *val)
-{
-    char *out;
-    int user_val = strtol(token, &out, 16);
-
-    if (!token) {
-        return false;
-    }
-    if (user_val == 0 && out == token) {
-        printf("Illegal val: %s\n", token);
-        return false;
-    }
-    if (user_val < 0 || user_val > 0xff) {
-        printf("Val too large: %d\n", user_val);
-        return false;
-    }
-
-    *val = (uint8_t)user_val;
-    return true;
-}
-
-static uint16_t dump(uint8_t *addr, uint16_t vaddr, int lines, int width)
-{
-    while (lines--) {
-        printf("%04x ", vaddr);
-        for (int i = 0; i < width; i++) {
-            printf("%02x ", *addr);
-            addr++;
-        }
-
-        vaddr += width;
-        printf("\n");
-    }
-    return vaddr;
+    printf("Unknown trace parameter\n");
 }
 
 static void on_ram()
 {
-    const uint16_t width = 16;
-    uint8_t        *ram  = NULL;
-    int            num   = width * 10;
-    char          *token = strtok(NULL, " ");
-    int           lines  = 0;
+    const uint16_t width  = 16;
+    uint8_t        *ram   = NULL;
+    int            num    = width * 10;
+    char           *token = strtok(NULL, " ");
+    int            lines  = 0;
 
     if (token) {
-        if (!parse_address(token, &_ram_address)) {
+        if (!cmd_parse_address(token, &_ram_address)) {
             return;
         }
         _ram_address = _ram_address & 0xfff0;
@@ -159,7 +116,8 @@ static void on_ram()
 
     lines = (num + (width - 1)) / width;
     ram =  mem_get_ram(_ram_address);
-    _ram_address = dump(ram, _ram_address, lines, width);
+    _ram_address = cmd_dump_mem(ram, _ram_address,
+                                lines, width);
 }
 
 static void on_color_ram()
@@ -177,16 +135,16 @@ static void on_color_ram()
             uint16_t addr;
 
             token = strtok(NULL, " ");
-            if (!parse_address(token, &addr)) {
+            if (!cmd_parse_address(token, &addr)) {
                 return;
             }
             token = strtok(NULL, " ");
-            if (!parse_val(token, &val)) {
+            if (!cmd_parse_uint8(token, &val)) {
                 return;
             }
             token = strtok(NULL, " ");
             if (token) {
-                parse_num(token, &num);
+                cmd_parse_uint16(token, &num);
             }
             ram += addr;
             printf("Setting %04x num %02x to %02x\n",
@@ -197,7 +155,7 @@ static void on_color_ram()
             return;
         }
         else {
-            if (!parse_address(token, &_color_ram_address)) {
+            if (!cmd_parse_address(token, &_color_ram_address)) {
                 return;
             }
             _color_ram_address = _color_ram_address & 0xfff0;
@@ -211,17 +169,8 @@ static void on_color_ram()
 
     lines = (num + (width - 1)) / width;
     ram +=  _color_ram_address;
-    _color_ram_address = dump(ram, _color_ram_address, lines, width);
-}
-
-static void set_vic_reg(uint16_t reg, uint8_t val)
-{
-    vic_reg_set(val, 0xd000 + reg, 0, NULL);
-}
-
-static uint8_t get_vic_reg(uint16_t reg)
-{
-    return vic_reg_get(0xd000 + reg, 0, NULL);
+    _color_ram_address = cmd_dump_mem(ram, _color_ram_address,
+                                      lines, width);
 }
 
 static void on_vic()
@@ -331,20 +280,16 @@ static void on_load()
 
 static void on_dis()
 {
-    int  num    = 10;
     char *token = strtok(NULL, " ");
 
     if (token) {
-        char *out;
-        int user_address = strtol(token, &out, 16);
-        if (user_address == 0 && out == token) {
-            printf("Illegal address: %s\n", token);
+        if (!cmd_parse_address(token, &_dis_address)) {
             return;
         }
-        _dis_address = user_address & 0xfff0;
+        _dis_address &= 0xfff0;
     }
 
-    cpu_disassembly_at(STDOUT_FILENO, _dis_address, num, &_dis_address);
+    cpu_disassembly_at(STDOUT_FILENO, _dis_address, 10, &_dis_address);
 }
 
 static void on_c64()
@@ -364,16 +309,7 @@ static void on_basic()
 }
 
 static void on_help();
-/*
- * SYNTAX:
- *
- * trace all|none|list|on sys name|off sys name
- * ram address [count=32 [width=8]]
- * c64
- * exit
- * dis [address=pc [count=10]]
- *
- */
+
 struct command _commands[] = {
     {
         .name        = "trace",
