@@ -309,7 +309,7 @@ void pla_stat()
 {
     struct config *c = &_configs[_config_index];
 
-    printf("PLA\n");
+    printf("PLA, configuration %d\n", _config_index);
     printf("Pages  Content\n");
     printf("00-0f  %s\n", get_bank_config_name(c->page_000_015));
     printf("10-7f  %s\n", get_bank_config_name(c->page_016_127));

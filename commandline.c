@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "mem.h"
 #include "cpu.h"
@@ -425,12 +426,17 @@ void commandline_loop()
     }
 }
 
-int commandline_init(bool *exit, struct cpu_state *state)
+int commandline_init(bool *exit_app, struct cpu_state *state)
 {
-    _log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY);
-    _exit_app = exit;
+    _log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+    if (_log_fd == -1) {
+        printf("Failed to create log file: %s\n", strerror(errno));
+        return -1;
+    }
+    _exit_app = exit_app;
 
     /* Defaults */
+    trace_enable_point("PLA",  "banks", _log_fd);
     trace_enable_point("CIA1", "ERROR", _log_fd);
     trace_enable_point("CIA2", "ERROR", _log_fd);
     trace_enable_point("CPU",  "ERROR", _log_fd);
