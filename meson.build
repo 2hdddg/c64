@@ -31,25 +31,4 @@ sdl_dep = dependency('sdl2')
 executable('c64', src, dependencies: [sdl_dep], link_args: [
     '-lmenu', '-lncurses', '-lpng', '-lreadline'])
 
-# Test suites
-shared_library('suite_cpu', [
-    'test/suite_cpu.c', 'cpu.c', 'cpu_instr.c', 'trace.c'])
-shared_library('suite_cpu_examples', [
-    'test/suite_cpu_examples.c', 'cpu.c', 'cpu_instr.c', 'trace.c'])
-shared_library('suite_mem', [
-    'test/suite_mem.c', 'mem.c'])
-shared_library('suite_cpu_port', [
-    'test/suite_cpu_port.c', 'cpu_port.c', 'mem.c'])
-shared_library('suite_pla', [
-    'test/suite_pla.c', 'pla.c', 'mem.c', 'trace.c' ])
-shared_library('suite_cia1', [
-    'test/suite_cia1.c', 'cia1.c', 'cia.c', 'keyboard.c',
-    'cia_timer.c', 'trace.c'])
-shared_library('suite_cia_timer', [
-    'test/suite_cia_timer.c', 'cia_timer.c'])
-shared_library('suite_keyboard', [
-    'test/suite_keyboard.c', 'keyboard.c', 'trace.c'])
-shared_library('suite_vic', [
-    'test/suite_vic.c', 'vic.c', 'vic_palette.c', 'trace.c', 'snapshot.c'],
-    link_args: ['-lpng'])
-
+subdir('test')
