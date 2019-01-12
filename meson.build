@@ -33,4 +33,4 @@ executable('c64', src, dependencies: [sdl_dep], link_args: [
     '-lmenu', '-lncurses', '-lpng', '-lreadline'],
     include_directories: inc)
 
-#subdir('test')
+subdir('test')

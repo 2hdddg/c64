@@ -1,18 +1,20 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "mem.h"
-#include "cpu.h"
-#include "cpu_port.h"
-#include "pla.h"
-#include "cia1.h"
-#include "cia2.h"
-#include "keyboard.h"
-#include "vic.h"
-#include "sid.h"
+#include "emulation/mem.h"
+#include "emulation/cpu.h"
+#include "emulation/cpu_port.h"
+#include "emulation/pla.h"
+#include "emulation/cia1.h"
+#include "emulation/cia2.h"
+#include "emulation/keyboard.h"
+#include "emulation/vic.h"
+#include "emulation/sid.h"
 
-#include "commandline.h"
-#include "ncurses_c64.h"
+#include "infrastructure/commandline.h"
+
+#include "ui/ncurses_c64.h"
+#include "ui/sdl_c64.h"
 
 uint8_t _basic_rom[8192];
 uint8_t _kernal_rom[8192];
@@ -71,7 +73,6 @@ int setup(struct cpu_state *state)
 
     return 0;
 }
-void sdl_c64_loop(struct cpu_state *state);
 
 int main(int argc, char **argv)
 {
