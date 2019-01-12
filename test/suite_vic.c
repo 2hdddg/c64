@@ -43,6 +43,8 @@ uint8_t _char2[] = {
     0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
 };
 
+static bool _refresh;
+
 static void set_reg(uint16_t reg, uint8_t val)
 {
     vic_reg_set(val, 0xd000 + reg, 0, NULL);
@@ -53,15 +55,20 @@ static uint8_t get_reg(uint16_t reg)
     return vic_reg_get(0xd000 + reg, 0, NULL);
 }
 
+static void do_refresh()
+{
+    _refresh = true;
+}
+
 static void render_frame()
 {
-    bool refresh = false;
     int skip = 0;
     bool stall_cpu = false;
 
-    while (!refresh) {
-        vic_step(&refresh, &skip, &stall_cpu);
+    while (!_refresh) {
+        vic_step(&skip, &stall_cpu);
     }
+    _refresh = false;
 }
 
 /* Returns drawn pixel, coordinates relative drawable area */
@@ -130,6 +137,9 @@ int each_before()
     set_reg(VIC_REG_EXTCOL, VIC_LIGHT_BLUE);
     set_reg(VIC_REG_BGCOL0, VIC_BLUE);
     set_reg(VIC_REG_VMCSB, 4 | (1 << 4));
+
+    _refresh = false;
+    vic_set_refresh_hook(do_refresh);
 
     return 0;
 }

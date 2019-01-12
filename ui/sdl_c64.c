@@ -2,10 +2,12 @@
 #include <stdbool.h>
 #include <SDL.h>
 
-#include "cpu.h"
-#include "cia1.h"
+#include "c64.h"
 #include "vic.h"
 #include "keyboard.h"
+
+static struct timespec _start, _stop;
+static struct SDL_Window *_window;
 
 static uint16_t map_key(SDL_Keycode sym)
 {
@@ -184,32 +186,27 @@ static uint16_t map_key(SDL_Keycode sym)
     return 0;
 }
 
-static bool refresh = false;
-static struct timespec start, stop;
-
-static void do_refresh(SDL_Window *window)
+static void do_refresh()
 {
-    clock_gettime(CLOCK_MONOTONIC, &stop);
-    SDL_UpdateWindowSurface(window);
-    //printf("Num ms %ld\n", (stop.tv_nsec - start.tv_nsec)/1000000);
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    refresh = false;
+    clock_gettime(CLOCK_MONOTONIC, &_stop);
+    SDL_UpdateWindowSurface(_window);
+    //printf("Num ms %ld\n", (_stop.tv_nsec - start.tv_nsec)/1000000);
+    clock_gettime(CLOCK_MONOTONIC, &_start);
 }
 
-void sdl_c64_loop(struct cpu_state *state)
+void sdl_c64_loop()
 {
-    SDL_Window *window = NULL;
-
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        return;
     }
 
-    window = SDL_CreateWindow("Commodore C64",
-                              SDL_WINDOWPOS_UNDEFINED,
-                              SDL_WINDOWPOS_UNDEFINED,
-                              520, 520,
-                              0 /*SDL_WINDOW_FULLSCREEN*/);
+    _window = SDL_CreateWindow("Commodore C64",
+                               SDL_WINDOWPOS_UNDEFINED,
+                               SDL_WINDOWPOS_UNDEFINED,
+                               520, 520,
+                               0 /*SDL_WINDOW_FULLSCREEN*/);
 
-    SDL_Surface *surface = SDL_GetWindowSurface(window);
+    SDL_Surface *surface = SDL_GetWindowSurface(_window);
 
     bool end = false;
     SDL_Event event;
@@ -220,12 +217,11 @@ void sdl_c64_loop(struct cpu_state *state)
     }
 
     vic_screen(surface->pixels, surface->pitch);
+    vic_set_refresh_hook(do_refresh);
 
     uint16_t key;
-    int vic_skips = 0;
-    bool stall_cpu = false;
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    clock_gettime(CLOCK_MONOTONIC, &_start);
     while (!end) {
         if (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -256,32 +252,10 @@ void sdl_c64_loop(struct cpu_state *state)
             }
         }
 
-        cia1_cycle();
-        if (vic_skips) {
-            vic_skips--;
-        }
-        else {
-            vic_step(&refresh, &vic_skips, &stall_cpu);
-        }
-        if (vic_skips) {
-            vic_skips--;
-        }
-        else {
-            vic_step(&refresh, &vic_skips, &stall_cpu);
-        }
-        if (refresh) {
-            do_refresh(window);
-        }
-        if (!stall_cpu) {
-            cpu_step(state);
-        }
-        else {
-            stall_cpu = false;
-        }
-
+        c64_step();
     }
     vic_snapshot("./snap.png");
 
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(_window);
     SDL_Quit();
 }

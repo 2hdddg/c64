@@ -426,7 +426,7 @@ void commandline_loop()
     }
 }
 
-int commandline_init(bool *exit_app, struct cpu_state *state)
+int commandline_init(bool *exit_app)
 {
     _log_fd = open("./log", O_CREAT|O_TRUNC|O_WRONLY, 0666);
     if (_log_fd == -1) {

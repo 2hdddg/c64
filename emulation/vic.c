@@ -65,6 +65,7 @@ uint16_t _video_matrix_addr = 0x0000;
 /* Output */
 static uint32_t *_screen;
 static uint32_t _pitch;
+static vic_refresh_hook _refresh_hook;
 
 /* First/last line of drawable area.
  * Changed when toggling between 24/25 rows. */
@@ -262,6 +263,11 @@ void vic_screen(uint32_t *screen, uint32_t pitch)
     _screen = screen;
     _pitch  = pitch;
     _curr_pixel = _screen;
+}
+
+void vic_set_refresh_hook(vic_refresh_hook hook)
+{
+    _refresh_hook = hook;
 }
 
 uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
@@ -537,7 +543,7 @@ static void draw_pixel_standard_bitmap_mode()
 
 }
 
-void vic_step(bool *refresh, int* skip, bool *stall_cpu)
+void vic_step(int* skip, bool *stall_cpu)
 {
     struct cycle *cycle;
 
@@ -585,7 +591,7 @@ void vic_step(bool *refresh, int* skip, bool *stall_cpu)
         _curr_pixel = (uint32_t*)(((uint8_t*)_screen) + _pitch * _curr_y);
         if (_curr_y == 313) {
             _curr_y = 0;
-            *refresh = true;
+            _refresh_hook();
         }
         else {
             *skip = 5;

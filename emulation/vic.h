@@ -26,12 +26,15 @@
 #define VIC_VMCSB_CHAR_PIX_ADDR 0b00001110
 #define VIC_VMCSB_VID_MATR_ADDR 0b11110000
 
+typedef void (*vic_refresh_hook)();
 
 void vic_init(uint8_t *char_rom,
               uint8_t *ram,
               uint8_t *color_ram);
 
 void vic_screen(uint32_t *screen, uint32_t pitch);
+void vic_set_refresh_hook(vic_refresh_hook refresh_hook);
+
 void vic_reset();
 
 /* Values match CIA2 port A */
@@ -55,7 +58,7 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
 void vic_set_bank(enum vic_bank bank);
 enum vic_bank vic_get_bank();
 
-void vic_step(bool *refresh, int *skip, bool *stall_cpu);
+void vic_step(int *skip, bool *stall_cpu);
 
 void vic_stat();
 void vic_snapshot(const char *name);
