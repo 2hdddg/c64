@@ -13,20 +13,19 @@ src = [
     'emulation/sid.c',
     'emulation/vic.c',
     'emulation/vic_palette.c',
+    'emulation/basic.c',
 
-    'basic.c',
+    'infrastructure/commandline.c',
+    'infrastructure/command.c',
+    'infrastructure/trace.c',
+
+    'ui/sdl_c64.c',
+    'ui/ncurses_c64.c',
+    'ui/snapshot.c',
 
     'main.c',
-    'commandline.c',
-    'command.c',
-    'trace.c',
-
-    'sdl_c64.c',
-    'snapshot.c',
-
-    'ncurses_c64.c',
 ]
-inc = include_directories('emulation')
+inc = include_directories('emulation', 'infrastructure', 'ui')
 
 sdl_dep = dependency('sdl2')
 
