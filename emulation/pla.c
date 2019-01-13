@@ -5,6 +5,7 @@
 
 #include "pla.h"
 #include "mem.h"
+
 #include "cia1.h"
 #include "cia2.h"
 #include "vic.h"
@@ -274,6 +275,14 @@ void pla_init(uint8_t *rom_kernal,
     _rom_basic   = rom_basic;
     _rom_chargen = rom_chargen;
 
+    pla_reset();
+
+    /* Debugging */
+    _trace_banks = trace_add_point("PLA", "banks");
+}
+
+void pla_reset()
+{
     /* Pull-up resistors, high by default */
     _loram  = LORAM_VAL;
     _hiram  = HIRAM_VAL;
@@ -283,9 +292,6 @@ void pla_init(uint8_t *rom_kernal,
 
     _config_index = calculate_config_index();
     apply_config(&_configs[_config_index], &_configs[32]);
-
-    /* Debugging */
-    _trace_banks = trace_add_point("PLA", "banks");
 }
 
 void pla_pins_from_cpu(bool pin_loram,
@@ -303,6 +309,12 @@ bool pla_is_basic_mapped()
 {
     /* Basic can only reside in these pages */
     return _configs[_config_index].page_160_191 == BASIC;
+}
+
+bool pla_is_kernal_mapped()
+{
+    /* Kernal can only reside in these pages */
+    return _configs[_config_index].page_224_255 == KERNAL;
 }
 
 void pla_stat()

@@ -14,6 +14,7 @@ src = [
     'emulation/vic.c',
     'emulation/vic_palette.c',
     'emulation/basic.c',
+    'emulation/kernal.c',
     'emulation/c64.c',
 
     'infrastructure/commandline.c',

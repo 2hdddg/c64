@@ -5,6 +5,8 @@
 #include "pla.h"
 #include "mem.h"
 
+static const uint16_t _address = 0xa000;
+
 
 uint16_t get_address(uint16_t addr)
 {
@@ -20,6 +22,7 @@ void basic_stat()
         printf("BASIC not mapped in memory\n");
         return;
     }
+    printf("BASIC address %04x\n", _address);
     printf("BASIC variables\n");
     /* Program location */
     printf("   TXTTAB %04x\n", get_address(0x2b));
@@ -30,5 +33,10 @@ void basic_stat()
     Line buffer
     0x0200 - 0x258 BUF
 */
+}
+
+uint16_t basic_address()
+{
+    return _address;
 }
 

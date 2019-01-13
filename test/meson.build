@@ -22,6 +22,7 @@ shared_library('suite_cpu_port', [
 shared_library('suite_pla', [
     'suite_pla.c',
     '../emulation/pla.c', '../emulation/mem.c',
+    '../emulation/basic.c', '../emulation/kernal.c',
     '../infrastructure/trace.c' ],
     include_directories: inc)
 shared_library('suite_cia1', [
