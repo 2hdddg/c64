@@ -317,6 +317,12 @@ bool pla_is_kernal_mapped()
     return _configs[_config_index].page_224_255 == KERNAL;
 }
 
+bool pla_is_io_mapped()
+{
+    /* IO can only reside in these pages */
+    return _configs[_config_index].page_208_223 == IO;
+}
+
 void pla_stat()
 {
     struct config *c = &_configs[_config_index];

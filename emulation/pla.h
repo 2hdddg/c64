@@ -23,6 +23,7 @@ void pla_pins_from_cpu(bool loram_high,
 /* For debugging */
 bool pla_is_basic_mapped();
 bool pla_is_kernal_mapped();
+bool pla_is_io_mapped();
 
 /* For debugging */
 void pla_stat();

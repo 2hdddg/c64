@@ -15,50 +15,59 @@ static uint8_t _chargen_rom[4096];
 #define KERNAL_VAL 0x65
 #define CHARGEN_VAL 0x75
 
+static uint8_t _vic_reg_val;
+static uint8_t _sid_reg_val;
+static uint8_t _cia1_reg_val;
+static uint8_t _cia2_reg_val;
+
 /* Mock IO interfaces */
 
 uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
                     uint8_t *ram)
 {
-    return 0;
+    return _vic_reg_val;
 }
 
 void vic_reg_set(uint8_t val, uint16_t absolute,
                  uint8_t relative, uint8_t *ram)
 {
+    _vic_reg_val = val;
 }
 
 uint8_t sid_mem_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
-    return 0;
+    return _sid_reg_val;
 }
 
 void sid_mem_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
+    _sid_reg_val = val;
 }
 
 uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
-    return 0;
+    return _cia1_reg_val;
 }
 
 void cia1_mem_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
+    _cia1_reg_val = val;
 }
 
 uint8_t cia2_mem_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
-    return 0;
+    return _cia2_reg_val;
 }
 
 void cia2_mem_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
+    _cia2_reg_val = val;
 }
 
 int once_before()
@@ -104,12 +113,37 @@ static bool probe_kernal(bool *error)
     return pla_mapped;
 }
 
-#if 0
-static bool probe_io()
+static bool probe_io(bool *error)
 {
-    return false;
+    bool pla_mapped = pla_is_io_mapped();
+    bool mem_mapped;
+
+    /* Set values on IO memory */
+    /* VIC */
+    mem_set_for_cpu(0xd000, 0x10);
+    /* SID */
+    mem_set_for_cpu(0xd400, 0x20);
+    /* TODO: Color RAM */
+    /* CIA1 */
+    mem_set_for_cpu(0xdc00, 0x30);
+    /* CIA2 */
+    mem_set_for_cpu(0xdd00, 0x40);
+
+    mem_mapped = _vic_reg_val == 0x10 &&
+                 _sid_reg_val == 0x20 &&
+                 _cia1_reg_val == 0x30 &&
+                 _cia2_reg_val == 0x40;
+
+    if (pla_mapped != mem_mapped) {
+        printf("PLA and memory has different opinion on if IO "
+               "is mapped or not!\n");
+        *error = true;
+    }
+
+    return pla_mapped;
 }
 
+#if 0
 static bool probe_char()
 {
     return false;
@@ -135,11 +169,11 @@ int test_map_after_reset()
         printf("Kernal should be mapped\n");
         return error ? -1 : 0;
     }
-#if 0
-    if (!probe_io()) {
+    if (!probe_io(&error) || error) {
         printf("IO should be mapped\n");
-        return 0;
+        return error ? -1 : 0;
     }
+#if 0
     if (probe_char()) {
         printf("Char should NOT be mapped\n");
         return 0;
