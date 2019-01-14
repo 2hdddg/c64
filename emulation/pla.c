@@ -323,6 +323,12 @@ bool pla_is_io_mapped()
     return _configs[_config_index].page_208_223 == IO;
 }
 
+bool pla_is_char_mapped()
+{
+    /* Char can only reside in these pages */
+    return _configs[_config_index].page_208_223 == CHAR;
+}
+
 void pla_stat()
 {
     struct config *c = &_configs[_config_index];

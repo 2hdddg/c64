@@ -87,7 +87,7 @@ int each_before()
     return 0;
 }
 
-static bool probe_basic(bool *error)
+static bool probe_basic()
 {
     bool pla_mapped = pla_is_basic_mapped();
     bool mem_mapped = mem_get_for_cpu(basic_address()) == BASIC_VAL;
@@ -95,12 +95,11 @@ static bool probe_basic(bool *error)
     if (pla_mapped != mem_mapped) {
         printf("PLA and memory has different opinion on if Basic "
                "is mapped or not!\n");
-        *error = true;
     }
     return pla_mapped;
 }
 
-static bool probe_kernal(bool *error)
+static bool probe_kernal()
 {
     bool pla_mapped = pla_is_kernal_mapped();
     bool mem_mapped = mem_get_for_cpu(kernal_address()) == KERNAL_VAL;
@@ -108,12 +107,11 @@ static bool probe_kernal(bool *error)
     if (pla_mapped != mem_mapped) {
         printf("PLA and memory has different opinion on if Kernal "
                "is mapped or not!\n");
-        *error = true;
     }
     return pla_mapped;
 }
 
-static bool probe_io(bool *error)
+static bool probe_io()
 {
     bool pla_mapped = pla_is_io_mapped();
     bool mem_mapped;
@@ -137,48 +135,42 @@ static bool probe_io(bool *error)
     if (pla_mapped != mem_mapped) {
         printf("PLA and memory has different opinion on if IO "
                "is mapped or not!\n");
-        *error = true;
     }
 
     return pla_mapped;
 }
 
-#if 0
 static bool probe_char()
 {
-    return false;
-}
+    bool pla_mapped = pla_is_char_mapped();
+    bool mem_mapped = mem_get_for_cpu(0xd000) == CHARGEN_VAL;
 
-static bool probe_ram_at(uint16_t addr)
-{
-    return false;
+    if (pla_mapped != mem_mapped) {
+        printf("PLA and memory has different opinion on if char "
+               "is mapped or not!\n");
+    }
+    return pla_mapped;
 }
-
-#endif
 
 int test_map_after_reset()
 {
-    bool error = false;
-
     /* Basic, IO and kernal should be mapped, not char */
-    if (!probe_basic(&error) || error) {
+    if (!probe_basic()) {
         printf("Basic should be mapped\n");
-        return error ? -1 : 0;
+        return 0;
     }
-    if (!probe_kernal(&error) || error) {
+    if (!probe_kernal()) {
         printf("Kernal should be mapped\n");
-        return error ? -1 : 0;
+        return 0;
     }
-    if (!probe_io(&error) || error) {
+    if (!probe_io()) {
         printf("IO should be mapped\n");
-        return error ? -1 : 0;
+        return 0;
     }
-#if 0
     if (probe_char()) {
         printf("Char should NOT be mapped\n");
         return 0;
     }
-#endif
     return 1;
 }
 
