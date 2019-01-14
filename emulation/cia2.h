@@ -9,9 +9,7 @@ void cia2_init();
 void cia2_reset();
 void cia2_cycle();
 
-uint8_t cia2_mem_get(uint16_t absolute, uint8_t relative,
-                     uint8_t *ram);
+uint8_t cia2_reg_get(uint16_t absolute, uint8_t *ram);
 
-void cia2_mem_set(uint8_t val, uint16_t absolute,
-                  uint8_t relative, uint8_t *ram);
+void cia2_reg_set(uint8_t val, uint16_t absolute, uint8_t *ram);
 

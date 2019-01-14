@@ -19,8 +19,8 @@ uint8_t* mem_get_color_ram_for_vic();
 
 
 typedef void (*mem_set_hook)(uint8_t val, uint16_t absolute,
-                             uint8_t relative, uint8_t *ram);
-typedef uint8_t (*mem_get_hook)(uint16_t absolute, uint8_t relative,
+                             uint8_t *ram);
+typedef uint8_t (*mem_get_hook)(uint16_t absolute,
                                 uint8_t *ram);
 
 
@@ -35,10 +35,8 @@ void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
                                int num_install);
 
 /* Mem hooks for accessing color RAM from CPU */
-void mem_color_ram_set(uint8_t val, uint16_t absolute,
-                       uint8_t relative, uint8_t *ram);
-uint8_t mem_color_ram_get(uint16_t absolute, uint8_t relative,
-                          uint8_t *ram);
+void mem_color_ram_set(uint8_t val, uint16_t absolute, uint8_t *ram);
+uint8_t mem_color_ram_get(uint16_t absolute, uint8_t *ram);
 
 void mem_dump_ram(int fd, uint16_t addr, uint16_t num);
 

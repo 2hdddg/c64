@@ -40,8 +40,7 @@ void cia1_cycle()
     cia_cycle(&_state);
 }
 
-uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
-                     uint8_t *ram)
+uint8_t cia1_reg_get(uint16_t absolute, uint8_t *ram)
 {
     /* Registers are mirrored at each 16 bytes */
     uint8_t reg = (absolute - CIA1_ADDRESS) % 0x10;
@@ -49,8 +48,7 @@ uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
     return cia_get_register(&_state, reg);
 }
 
-void cia1_mem_set(uint8_t val, uint16_t absolute,
-                  uint8_t relative, uint8_t *ram)
+void cia1_reg_set(uint8_t val, uint16_t absolute, uint8_t *ram)
 {
     /* Registers are repeated at each 16 bytes */
     uint8_t reg = (absolute - CIA1_ADDRESS) % 0x10;

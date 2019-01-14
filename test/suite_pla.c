@@ -34,37 +34,37 @@ void vic_reg_set(uint8_t val, uint16_t absolute,
     _vic_reg_val = val;
 }
 
-uint8_t sid_mem_get(uint16_t absolute, uint8_t relative,
+uint8_t sid_reg_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
     return _sid_reg_val;
 }
 
-void sid_mem_set(uint8_t val, uint16_t absolute,
+void sid_reg_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
     _sid_reg_val = val;
 }
 
-uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
+uint8_t cia1_reg_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
     return _cia1_reg_val;
 }
 
-void cia1_mem_set(uint8_t val, uint16_t absolute,
+void cia1_reg_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
     _cia1_reg_val = val;
 }
 
-uint8_t cia2_mem_get(uint16_t absolute, uint8_t relative,
+uint8_t cia2_reg_get(uint16_t absolute, uint8_t relative,
                      uint8_t *ram)
 {
     return _cia2_reg_val;
 }
 
-void cia2_mem_set(uint8_t val, uint16_t absolute,
+void cia2_reg_set(uint8_t val, uint16_t absolute,
                   uint8_t relative, uint8_t *ram)
 {
     _cia2_reg_val = val;

@@ -97,20 +97,17 @@ struct config _configs[] = {
     { OPEN,  OPEN,   OPEN,   OPEN,   OPEN,   OPEN,   OPEN }, /* 32 */
 };
 
-static uint8_t mem_get_kernal(uint16_t absolute, uint8_t relative,
-                              uint8_t *ram)
+static uint8_t mem_get_kernal(uint16_t absolute, uint8_t *ram)
 {
     return _rom_kernal[absolute - 0xe000];
 }
 
-static uint8_t mem_get_basic(uint16_t absolute, uint8_t relative,
-                             uint8_t *ram)
+static uint8_t mem_get_basic(uint16_t absolute, uint8_t *ram)
 {
     return _rom_basic[absolute - 0xa000];
 }
 
-static uint8_t mem_get_charen(uint16_t absolute, uint8_t relative,
-                              uint8_t *ram)
+static uint8_t mem_get_charen(uint16_t absolute, uint8_t *ram)
 {
     return _rom_chargen[absolute - 0xd000];
 }
@@ -152,8 +149,8 @@ const struct mem_hook_install _io_hooks[] = {
     {
         .page_start = 0xd4,
         .num_pages = 0x400 / 0x100,
-        .set_hook = sid_mem_set,
-        .get_hook = sid_mem_get,
+        .set_hook = sid_reg_set,
+        .get_hook = sid_reg_get,
     },
     {
         .page_start = 0xd8,
@@ -164,14 +161,14 @@ const struct mem_hook_install _io_hooks[] = {
     {
         .page_start = 0xdc,
         .num_pages = 0x100 / 0x100,
-        .set_hook = cia1_mem_set,
-        .get_hook = cia1_mem_get,
+        .set_hook = cia1_reg_set,
+        .get_hook = cia1_reg_get,
     },
     {
         .page_start = 0xdd,
         .num_pages = 0x100 / 0x100,
-        .set_hook = cia2_mem_set,
-        .get_hook = cia2_mem_get,
+        .set_hook = cia2_reg_set,
+        .get_hook = cia2_reg_get,
     },
 };
 

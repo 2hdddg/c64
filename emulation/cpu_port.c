@@ -71,10 +71,9 @@ static void _on_changed()
     _data_direction_reg_shadow = _data_direction_reg;
 }
 
-static void _mem_set(uint8_t val, uint16_t absolute,
-                     uint8_t relative, uint8_t *ram)
+static void _mem_set(uint8_t val, uint16_t absolute, uint8_t *ram)
 {
-    switch (relative) {
+    switch (absolute) {
         case 0:
             _data_direction_reg = val;
             _on_changed();
@@ -89,10 +88,9 @@ static void _mem_set(uint8_t val, uint16_t absolute,
     }
 }
 
-static uint8_t _mem_get(uint16_t absolute, uint8_t relative,
-                        uint8_t *ram)
+static uint8_t _mem_get(uint16_t absolute, uint8_t *ram)
 {
-    switch (relative) {
+    switch (absolute) {
         case 0:
             return _data_direction_reg;
         case 1:

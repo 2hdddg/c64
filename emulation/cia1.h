@@ -10,9 +10,7 @@ void cia1_reset(); /* RES pin low */
 void cia1_cycle();
 
 /* PLA maps address space */
-uint8_t cia1_mem_get(uint16_t absolute, uint8_t relative,
-                     uint8_t *ram);
+uint8_t cia1_reg_get(uint16_t absolute, uint8_t *ram);
 
-void cia1_mem_set(uint8_t val, uint16_t absolute,
-                  uint8_t relative, uint8_t *ram);
+void cia1_reg_set(uint8_t val, uint16_t absolute, uint8_t *ram);
 

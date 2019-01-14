@@ -38,12 +38,12 @@ struct command {
 
 static void set_vic_reg(uint16_t reg, uint8_t val)
 {
-    vic_reg_set(val, 0xd000 + reg, 0, NULL);
+    vic_reg_set(val, 0xd000 + reg, NULL);
 }
 
 static uint8_t get_vic_reg(uint16_t reg)
 {
-    return vic_reg_get(0xd000 + reg, 0, NULL);
+    return vic_reg_get(0xd000 + reg, NULL);
 }
 
 static void on_trace()

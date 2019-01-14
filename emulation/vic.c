@@ -270,8 +270,7 @@ void vic_set_refresh_hook(vic_refresh_hook hook)
     _refresh_hook = hook;
 }
 
-uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
-                     uint8_t *ram)
+uint8_t vic_reg_get(uint16_t absolute, uint8_t *ram)
 {
     uint16_t offset = (absolute - 0xd00) % 0x40;
 
@@ -284,8 +283,7 @@ uint8_t vic_reg_get(uint16_t absolute, uint8_t relative,
     }
 }
 
-void vic_reg_set(uint8_t val, uint16_t absolute,
-                  uint8_t relative, uint8_t *ram)
+void vic_reg_set(uint8_t val, uint16_t absolute, uint8_t *ram)
 {
     uint16_t offset = (absolute - 0xd000) % 0x40;
 

@@ -5,7 +5,6 @@
 /* Recorded from last hook call */
 uint8_t _val;
 uint16_t _absolute;
-uint8_t _relative;
 uint8_t *_ram;
 
 int _num_set_hook_calls;
@@ -25,7 +24,6 @@ int each_before()
 
     _val = 0;
     _absolute = 0;
-    _relative = 0;
     _ram = 0;
 
     _num_set_hook_calls = 0;
@@ -44,21 +42,17 @@ static int assert_val(uint8_t actual, uint8_t expected)
     return 1;
 }
 
-static void set_hook(uint8_t val, uint16_t absolute,
-                     uint8_t relative, uint8_t *ram)
+static void set_hook(uint8_t val, uint16_t absolute, uint8_t *ram)
 {
     _val = val;
     _absolute = absolute;
-    _relative = relative;
     _ram = ram;
     _num_set_hook_calls++;
 }
 
-static uint8_t get_hook(uint16_t absolute,
-                        uint8_t relative, uint8_t *ram)
+static uint8_t get_hook(uint16_t absolute, uint8_t *ram)
 {
     _absolute = absolute;
-    _relative = relative;
     _ram = ram;
     _num_get_hook_calls++;
 
@@ -95,8 +89,7 @@ int test_install_set_hook_for_cpu()
     }
 
     /* Check parameters to hook */
-    if (_val != 0x90 || _absolute != ADDR_0x10 ||
-        _relative != (ADDR_0x10 & 0xff) || *_ram != 0x10) {
+    if (_val != 0x90 || _absolute != ADDR_0x10 || *_ram != 0x10) {
         printf("Wrong parameters to set hook\n");
         return 0;
     }
@@ -126,8 +119,7 @@ int test_install_get_hook_for_cpu()
     }
 
     /* Check parameters to hook */
-    if (_absolute != ADDR_0x10 ||
-        _relative != (ADDR_0x10 & 0xff) || *_ram != 0x10) {
+    if (_absolute != ADDR_0x10 || *_ram != 0x10) {
         printf("Wrong parameters to get hook\n");
         return 0;
     }

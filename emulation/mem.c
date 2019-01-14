@@ -41,7 +41,7 @@ void mem_set_for_cpu(uint16_t addr, uint8_t val)
     struct mem_hooks *hooks = &_cpu_hooks[page];
 
     if (hooks->set_hook) {
-        hooks->set_hook(val, addr, addr & 0xff, &_ram[addr]);
+        hooks->set_hook(val, addr, &_ram[addr]);
     }
     else {
         _ram[addr] = val;
@@ -54,7 +54,7 @@ uint8_t mem_get_for_cpu(uint16_t addr)
     struct mem_hooks *hooks = &_cpu_hooks[page];
 
     if (hooks->get_hook) {
-        return hooks->get_hook(addr, addr & 0xff, &_ram[addr]);
+        return hooks->get_hook(addr, &_ram[addr]);
     }
     else {
         return _ram[addr];
@@ -78,8 +78,7 @@ void mem_install_hooks_for_cpu(const struct mem_hook_install *install,
     }
 }
 
-void mem_color_ram_set(uint8_t val, uint16_t absolute,
-                       uint8_t relative, uint8_t *ram)
+void mem_color_ram_set(uint8_t val, uint16_t absolute, uint8_t *ram)
 {
     uint16_t offset = absolute - 0xd800;
 
@@ -90,8 +89,7 @@ void mem_color_ram_set(uint8_t val, uint16_t absolute,
     _color_ram[offset] = val;
 }
 
-uint8_t mem_color_ram_get(uint16_t absolute, uint8_t relative,
-                          uint8_t *ram)
+uint8_t mem_color_ram_get(uint16_t absolute, uint8_t *ram)
 {
     uint16_t offset = absolute - 0xd800;
 
@@ -101,7 +99,6 @@ uint8_t mem_color_ram_get(uint16_t absolute, uint8_t relative,
     }
     return _color_ram[offset];
 }
-
 
 void mem_dump_ram(int fd, uint16_t addr, uint16_t num)
 {
